@@ -1,0 +1,32 @@
+body {
+    background: #ECEFF1;
+    color: rgba(0, 0, 0, 0.87);
+    font-family: Roboto, Helvetica, Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+header {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: skyblue;
+}
+
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    flex-direction: column;
+}
+
+@media (max-width: 600px) {
+    body {
+        margin-top: 0;
+        background: white;
+        box-shadow: none;
+        border-top: 16px solid #ffa100;
+    }
+}
