@@ -29,16 +29,27 @@ firebase.auth().onAuthStateChanged(function (user) {
 });
 
 // Initialize Firebase
-db.collection("actions").orderBy("createdAt", "desc").limit(1).onSnapshot(function (querySnapshot) { //最新の情報を参照
-  querySnapshot.forEach(function (doc) {
-    ref = doc.ref;
-    field = JSON.parse(doc.data().field);
-    selectedX = doc.data().x;
-    selectedY = doc.data().y;
-    currentStone = doc.data().stone;
-    drawField();
-  });
-})
+// db.collection("actions").orderBy("createdAt", "desc").limit(1).onSnapshot(function (querySnapshot) { //最新の情報を参照
+//   querySnapshot.forEach(function (doc) {
+//     ref = doc.ref;
+//     field = JSON.parse(doc.data().field);
+//     selectedX = doc.data().x;
+//     selectedY = doc.data().y;
+//     currentStone = doc.data().stone;
+//     drawField();
+//   });
+// });
+
+// データベースから初期値を取得
+db.collection("data").doc("field").onSnapshot(snapshot => {
+  var data = snapshot.data();
+  ref = snapshot.ref;
+  field = JSON.parse(data.field);
+  selectedX = data.x;
+  selectedY = data.y;
+  currentStone = data.stone;
+  drawField();
+});
 
 // 引数の座標のマスの情報を取得する関数
 function getStone(x, y) {
@@ -71,7 +82,7 @@ function drawCircle(color, x, y, r) {
 function drawField() {
   // ログインしていなければログインページに戻る
   if (!uid) window.location.replace("../index.html");
-  drawRect("white", 0, 0, cellSize * 8, cellSize * 8);
+  drawRect("black", 0, 0, cellSize * 8, cellSize * 8);
   for (var y = 1; y <= 8; y++) {
     for (var x = 1; x <= 8; x++) {
       var bgColor = (x == selectedX && y == selectedY) ? "yellow" : "green";
@@ -129,7 +140,16 @@ function onClick(e) {
   // 置けるマスがあるか判定したい
 
   drawField();
-  db.collection("actions").add({
+  // db.collection("actions").add({
+  //   x: x,
+  //   y: y,
+  //   stone: currentStone,
+  //   field: JSON.stringify(field), // 配列をJSON形式で保存
+  //   uid: uid,
+  //   prev: ref,
+  //   createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  // });
+  var doc = db.collection("data").doc("field").update({
     x: x,
     y: y,
     stone: currentStone,
@@ -152,12 +172,21 @@ function init() {
   setStone(5, 5, 2);
   drawField();
   // データベースを初期化
-  db.collection("actions").add({
+  // db.collection("actions").add({
+  //   x: selectedX,
+  //   y: selectedY,
+  //   stone: currentStone,
+  //   field: JSON.stringify(field),
+  //   uid: uid,
+  //   prev: ref,
+  //   createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  // });
+  db.collection("data").doc("field").update({
     x: selectedX,
     y: selectedY,
-    stone: currentStone,
-    field: JSON.stringify(field),
     uid: uid,
+    stone: currentStone,
+    field: JSON.stringify(field), // 配列をJSON形式で保存
     prev: ref,
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   });
