@@ -10,6 +10,9 @@ const firebaseConfig = {
 };
 
 var db = firebase.firestore(firebase.initializeApp(firebaseConfig));
+var date = new Date();
+var noDBAccPeriod = 0;
+var player = 0;
 var uid = null;
 var context = document.querySelector("canvas").getContext("2d");
 var ref = null;
@@ -24,30 +27,47 @@ var dy = [-1, -1, 0, 1, 1, 1, 0, -1];
 
 //ログイン状況が変化した場合呼び出す
 firebase.auth().onAuthStateChanged(function (user) {
+  // ログインしていない場合はログインページに移動
   if (!user) window.location.replace("../index.html");
   uid = user.uid;
+  // 最後の更新時間との差を求める
+  db.collection("data").doc("field").onSnapshot(snapshot => {
+    if (snapshot.data().createdAt != null) {
+      noDBAccPeriod = date.getTime() - snapshot.data().createdAt.toDate().getTime();
+    }
+  });
+  db.collection("data").doc("users").onSnapshot(snapshot => {
+    // 最後の処理から10分以上経っていれば初期化する
+    if (noDBAccPeriod > 10 * 60 * 1000) {
+      db.collection("data").doc("users").update({
+        uid1: null,
+        uid2: null
+      });
+      init();
+    }
+    //ログイン情報をデータベースに格納
+    if (snapshot.data().uid1 == uid || snapshot.data().uid1 == null) {
+      player = 1;
+      db.collection("data").doc("users").update({ uid1: uid });
+    } else if (snapshot.data().uid2 == uid || snapshot.data().uid2 == null) {
+      player = 2;
+      db.collection("data").doc("users").update({ uid2: uid });
+      init();
+    }
+    else {// 2人以上ログインしている場合はログインページに戻る
+      logout();
+      window.location.replace("../index.html");
+    }
+  });
 });
 
-// Initialize Firebase
-// db.collection("actions").orderBy("createdAt", "desc").limit(1).onSnapshot(function (querySnapshot) { //最新の情報を参照
-//   querySnapshot.forEach(function (doc) {
-//     ref = doc.ref;
-//     field = JSON.parse(doc.data().field);
-//     selectedX = doc.data().x;
-//     selectedY = doc.data().y;
-//     currentStone = doc.data().stone;
-//     drawField();
-//   });
-// });
-
-// データベースから初期値を取得
+// データベースからfieldの値を取得
 db.collection("data").doc("field").onSnapshot(snapshot => {
-  var data = snapshot.data();
   ref = snapshot.ref;
-  field = JSON.parse(data.field);
-  selectedX = data.x;
-  selectedY = data.y;
-  currentStone = data.stone;
+  field = JSON.parse(snapshot.data().field);
+  selectedX = snapshot.data().x;
+  selectedY = snapshot.data().y;
+  currentStone = snapshot.data().stone;
   drawField();
 });
 
@@ -80,8 +100,6 @@ function drawCircle(color, x, y, r) {
 
 // フィールドを描写する関数
 function drawField() {
-  // ログインしていなければログインページに戻る
-  if (!uid) window.location.replace("../index.html");
   drawRect("black", 0, 0, cellSize * 8, cellSize * 8);
   for (var y = 1; y <= 8; y++) {
     for (var x = 1; x <= 8; x++) {
@@ -127,36 +145,34 @@ function reverse(stone, x, y, dx, dy) {
 
 // 画面をクリックした時の関数
 function onClick(e) {
-  var rect = e.target.getBoundingClientRect();
-  // クリックされたマスの座標を取得
-  var x = Math.floor((e.clientX - rect.left) / cellSize) + 1;
-  var y = Math.floor((e.clientY - rect.top) / cellSize) + 1;
+  // ログインしていなければログインページに戻る
+  if (!uid) window.location.replace("../index.html");
+  db.collection("data").doc("users").onSnapshot(snapshot => {
+    // 自分の番か判定
+    if (snapshot.data().uid2 != null && currentStone != player) return;
+    // クリックされたマスの座標を取得
+    var rect = e.target.getBoundingClientRect();
+    var x = Math.floor((e.clientX - rect.left) / cellSize) + 1;
+    var y = Math.floor((e.clientY - rect.top) / cellSize) + 1;
 
-  if (!canPut(currentStone, x, y)) return;
-  selectedX = x;
-  selectedY = y;
-  putStone(x, y, currentStone);
-  currentStone = currentStone % 2 + 1;
-  // 置けるマスがあるか判定したい
+    if (!canPut(currentStone, x, y)) return;
+    selectedX = x;
+    selectedY = y;
+    putStone(x, y, currentStone);
+    currentStone = currentStone % 2 + 1;
+    // 置けるマスがあるか判定する機能追加
 
-  drawField();
-  // db.collection("actions").add({
-  //   x: x,
-  //   y: y,
-  //   stone: currentStone,
-  //   field: JSON.stringify(field), // 配列をJSON形式で保存
-  //   uid: uid,
-  //   prev: ref,
-  //   createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  // });
-  var doc = db.collection("data").doc("field").update({
-    x: x,
-    y: y,
-    stone: currentStone,
-    field: JSON.stringify(field), // 配列をJSON形式で保存
-    uid: uid,
-    prev: ref,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+
+    drawField();
+    db.collection("data").doc("field").update({
+      x: x,
+      y: y,
+      stone: currentStone,
+      field: JSON.stringify(field), // 配列をJSON形式で保存
+      uid: uid,
+      prev: ref,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
   });
 }
 
@@ -172,24 +188,30 @@ function init() {
   setStone(5, 5, 2);
   drawField();
   // データベースを初期化
-  // db.collection("actions").add({
-  //   x: selectedX,
-  //   y: selectedY,
-  //   stone: currentStone,
-  //   field: JSON.stringify(field),
-  //   uid: uid,
-  //   prev: ref,
-  //   createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  // });
   db.collection("data").doc("field").update({
     x: selectedX,
     y: selectedY,
     uid: uid,
     stone: currentStone,
-    field: JSON.stringify(field), // 配列をJSON形式で保存
+    field: JSON.stringify(field),
     prev: ref,
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   });
 }
 
-// ログアウト機能
+// ログアウト関数
+function logout() {
+  firebase.auth().signOut().then(() => {
+    // Sign-out successful.
+    if (player == 1) {
+      db.collection("data").doc("users").update({
+        uid1: null,
+        uid2: null
+      });
+    } else if (player == 2) {
+      db.collection("data").doc("users").update({ uid2: null });
+    }
+  }).catch((error) => {
+    // An error happened.
+  });
+}
