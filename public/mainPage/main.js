@@ -56,7 +56,6 @@ firebase.auth().onAuthStateChanged(function (user) {
     }
     else {// 2人以上ログインしている場合はログインページに戻る
       logout();
-      window.location.replace("../index.html");
     }
   });
 });
@@ -68,7 +67,7 @@ db.collection("data").doc("field").onSnapshot(snapshot => {
   selectedX = snapshot.data().x;
   selectedY = snapshot.data().y;
   currentStone = snapshot.data().stone;
-  drawField();
+  checkField();
 });
 
 // 引数の座標のマスの情報を取得する関数
@@ -99,16 +98,25 @@ function drawCircle(color, x, y, r) {
 }
 
 // フィールドを描写する関数
-function drawField() {
+function checkField() {
+  var numOfCanPut = 0;
   drawRect("black", 0, 0, cellSize * 8, cellSize * 8);
   for (var y = 1; y <= 8; y++) {
     for (var x = 1; x <= 8; x++) {
-      var bgColor = (x == selectedX && y == selectedY) ? "yellow" : "green";
+      var bgColor = "green";// 通常マスは緑
+      if (canPut(currentStone, x, y)) {
+        bgColor = "lime";// 次に置けるマスは薄緑
+        numOfCanPut++;
+      }
+      if (x == selectedX && y == selectedY) bgColor = "yellow";// 石を置いたマスなら黄色
       drawRect(bgColor, (x - 1) * cellSize, (y - 1) * cellSize, cellSize - 1, cellSize - 1);
       if (getStone(x, y) == 1) drawCircle("black", x * cellSize - cellSize / 2, y * cellSize - cellSize / 2, cellSize * 0.9 / 2);
       if (getStone(x, y) == 2) drawCircle("white", x * cellSize - cellSize / 2, y * cellSize - cellSize / 2, cellSize * 0.9 / 2);
     }
   }
+  // 置けるマスがなければ番を交代
+  if (numOfCanPut == 0) currentStone = currentStone % 2 + 1;
+  // 最後に石を置いたのが自分かつ置けるマスがなければ試合終了
 }
 
 // 引数のマスに石を置けるか判定する関数
@@ -159,11 +167,8 @@ function onClick(e) {
     selectedX = x;
     selectedY = y;
     putStone(x, y, currentStone);
-    currentStone = currentStone % 2 + 1;
-    // 置けるマスがあるか判定する機能追加
-
-
-    drawField();
+    currentStone = currentStone % 2 + 1;// 番交代
+    checkField();
     db.collection("data").doc("field").update({
       x: x,
       y: y,
@@ -186,7 +191,7 @@ function init() {
   setStone(5, 4, 1);
   setStone(4, 4, 2);
   setStone(5, 5, 2);
-  drawField();
+  checkField();
   // データベースを初期化
   db.collection("data").doc("field").update({
     x: selectedX,
@@ -211,6 +216,7 @@ function logout() {
     } else if (player == 2) {
       db.collection("data").doc("users").update({ uid2: null });
     }
+    window.location.replace("../index.html");
   }).catch((error) => {
     // An error happened.
   });
