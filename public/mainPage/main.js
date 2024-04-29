@@ -30,11 +30,8 @@ firebase.auth().onAuthStateChanged(function (user) {
   // ログインしていない場合はログインページに移動
   if (!user) window.location.replace("../index.html");
   uid = user.uid;
-  // 最後の更新時間との差を求める
   db.collection("data").doc("field").onSnapshot(snapshot => {
-    if (snapshot.data().createdAt != null) {
       noDBAccPeriod = date.getTime() - snapshot.data().createdAt.toDate().getTime();
-    }
   });
   db.collection("data").doc("users").onSnapshot(snapshot => {
     // 最後の処理から10分以上経っていれば初期化する
@@ -45,7 +42,7 @@ firebase.auth().onAuthStateChanged(function (user) {
       });
       init();
     }
-    //ログイン情報をデータベースに格納
+    // ログイン情報をデータベースに格納
     if (snapshot.data().uid1 == uid || snapshot.data().uid1 == null) {
       player = 1;
       db.collection("data").doc("users").update({ uid1: uid });
@@ -69,6 +66,36 @@ db.collection("data").doc("field").onSnapshot(snapshot => {
   currentStone = snapshot.data().stone;
   checkField();
 });
+
+// 画面をクリックした時の関数
+function onClick(e) {
+  // ログインしていなければログインページに戻る
+  if (!uid) window.location.replace("../index.html");
+  db.collection("data").doc("users").onSnapshot(snapshot => {
+    // 自分の番か判定
+    if (snapshot.data().uid2 != null && currentStone != player) return;
+    // クリックされたマスの座標を取得
+    var rect = e.target.getBoundingClientRect();
+    var x = Math.floor((e.clientX - rect.left) / cellSize) + 1;
+    var y = Math.floor((e.clientY - rect.top) / cellSize) + 1;
+
+    if (!canPut(currentStone, x, y)) return;
+    selectedX = x;
+    selectedY = y;
+    putStone(x, y, currentStone);
+    currentStone = currentStone % 2 + 1;// 番交代
+    checkField();
+    db.collection("data").doc("field").update({
+      x: x,
+      y: y,
+      stone: currentStone,
+      field: JSON.stringify(field), // 配列をJSON形式で保存
+      uid: uid,
+      prev: ref,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  });
+}
 
 // 引数の座標のマスの情報を取得する関数
 function getStone(x, y) {
@@ -149,36 +176,6 @@ function reverse(stone, x, y, dx, dy) {
   if (getStone(x + dx, y + dy) == stone) return;
   setStone(x + dx, y + dy, stone);
   reverse(stone, x + dx, y + dy, dx, dy);
-}
-
-// 画面をクリックした時の関数
-function onClick(e) {
-  // ログインしていなければログインページに戻る
-  if (!uid) window.location.replace("../index.html");
-  db.collection("data").doc("users").onSnapshot(snapshot => {
-    // 自分の番か判定
-    if (snapshot.data().uid2 != null && currentStone != player) return;
-    // クリックされたマスの座標を取得
-    var rect = e.target.getBoundingClientRect();
-    var x = Math.floor((e.clientX - rect.left) / cellSize) + 1;
-    var y = Math.floor((e.clientY - rect.top) / cellSize) + 1;
-
-    if (!canPut(currentStone, x, y)) return;
-    selectedX = x;
-    selectedY = y;
-    putStone(x, y, currentStone);
-    currentStone = currentStone % 2 + 1;// 番交代
-    checkField();
-    db.collection("data").doc("field").update({
-      x: x,
-      y: y,
-      stone: currentStone,
-      field: JSON.stringify(field), // 配列をJSON形式で保存
-      uid: uid,
-      prev: ref,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-  });
 }
 
 // フィールドを初期化する関数
