@@ -212,11 +212,22 @@ function logout() {
       db.collection("data").doc("users").update({
         uid1: null,
         uid2: null
+      }).then(function () {
+        window.location.replace("../index.html");
+      }).catch(function (error) {
+        // The document probably doesn't exist.
+        console.error("Error updating document: ", error);
       });
-    } else if (player == 2) {
-      db.collection("data").doc("users").update({ uid2: null });
+    }else if (player == 2) {
+      db.collection("data").doc("users").update({
+        uid2: null
+      }).then(function () {
+        window.location.replace("../index.html");
+      }).catch(function (error) {
+        // The document probably doesn't exist.
+        console.error("Error updating document: ", error);
+      });
     }
-    window.location.replace("../index.html");
   }).catch((error) => {
     // An error happened.
   });
