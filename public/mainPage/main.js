@@ -73,9 +73,12 @@ db.collection("data").doc("field").onSnapshot(snapshot => {
 
 // 画面をクリックした時の関数
 function onClick(e) {
-  // ログインしていなければログインページに戻る
-  if (!uid) window.location.replace("../index.html");
   db.collection("data").doc("users").onSnapshot(snapshot => {
+    // ログインしていなければログインページに戻る
+    if(snapshot.data().uid1!=uid&&snapshot.data().uid2!=uid) {
+      logout();
+      return
+    }
     // 自分の番か判定
     if (snapshot.data().uid2 != null && currentStone != player) return;
     // クリックされたマスの座標を取得
