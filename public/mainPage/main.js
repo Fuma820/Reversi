@@ -31,11 +31,15 @@ firebase.auth().onAuthStateChanged(function (user) {
   if (!user) window.location.replace("../index.html");
   uid = user.uid;
   db.collection("data").doc("field").onSnapshot(snapshot => {
+    if (snapshot.data().createdAt != null) {
       noDBAccPeriod = date.getTime() - snapshot.data().createdAt.toDate().getTime();
+    }
   });
   db.collection("data").doc("users").onSnapshot(snapshot => {
     // 最後の処理から10分以上経っていれば初期化する
-    if (noDBAccPeriod > 10 * 60 * 1000) {
+    if (noDBAccPeriod > 10 * 60 * 1000
+      && snapshot.data().uid1 != uid
+      && snapshot.data().uid2 != uid) {
       db.collection("data").doc("users").update({
         uid1: null,
         uid2: null
@@ -215,7 +219,7 @@ function logout() {
         // The document probably doesn't exist.
         console.error("Error updating document: ", error);
       });
-    }else if (player == 2) {
+    } else if (player == 2) {
       db.collection("data").doc("users").update({
         uid2: null
       }).then(function () {
