@@ -12,6 +12,7 @@ const firebaseConfig = {
 var db = firebase.firestore(firebase.initializeApp(firebaseConfig));
 var date = new Date();
 var noDBAccPeriod = 0;
+var limitTime = 10 * 60 * 1000;
 var player = 0;
 var uid = null;
 var context = document.querySelector("canvas").getContext("2d");
@@ -37,7 +38,7 @@ firebase.auth().onAuthStateChanged(function (user) {
   });
   db.collection("data").doc("users").onSnapshot(snapshot => {
     // 最後の処理から10分以上経っていれば初期化する
-    if (noDBAccPeriod > 10 * 60 * 1000
+    if (noDBAccPeriod > limitTime
       && snapshot.data().uid1 != uid
       && snapshot.data().uid2 != uid) {
       db.collection("data").doc("users").update({
@@ -73,11 +74,21 @@ db.collection("data").doc("field").onSnapshot(snapshot => {
 
 // 画面をクリックした時の関数
 function onClick(e) {
+  db.collection("data").doc("field").onSnapshot(snapshot => {
+    if (snapshot.data().createdAt != null) {
+      noDBAccPeriod = date.getTime() - snapshot.data().createdAt.toDate().getTime();
+    }
+    if (noDBAccPeriod > limitTime) {
+      init();
+      logout();
+      return;
+    }
+  });
   db.collection("data").doc("users").onSnapshot(snapshot => {
     // ログインしていなければログインページに戻る
-    if(snapshot.data().uid1!=uid&&snapshot.data().uid2!=uid) {
+    if (snapshot.data().uid1 != uid && snapshot.data().uid2 != uid) {
       logout();
-      return
+      return;
     }
     // 自分の番か判定
     if (snapshot.data().uid2 != null && currentStone != player) return;
