@@ -16,7 +16,6 @@ var limitTime = 10 * 60 * 1000;
 var player = 0;
 var uid = null;
 var context = document.querySelector("canvas").getContext("2d");
-var ref = null;
 var field = Array.from(new Array(8), () => new Array(8).fill(0));
 var currentStone = 1;
 var selectedX = 0;
@@ -64,7 +63,6 @@ firebase.auth().onAuthStateChanged(function (user) {
 
 // データベースからfieldの値を取得
 db.collection("data").doc("field").onSnapshot(snapshot => {
-  ref = snapshot.ref;
   field = JSON.parse(snapshot.data().field);
   selectedX = snapshot.data().x;
   selectedY = snapshot.data().y;
@@ -109,7 +107,6 @@ function onClick(e) {
       stone: currentStone,
       field: JSON.stringify(field), // 配列をJSON形式で保存
       uid: uid,
-      prev: ref,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
   });
@@ -214,7 +211,6 @@ function init() {
     uid: uid,
     stone: currentStone,
     field: JSON.stringify(field),
-    prev: ref,
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   });
 }
@@ -223,26 +219,15 @@ function init() {
 function logout() {
   firebase.auth().signOut().then(() => {
     // Sign-out successful.
-    if (player == 1) {
-      db.collection("data").doc("users").update({
-        uid1: null,
-        uid2: null
-      }).then(function () {
-        window.location.replace("../index.html");
-      }).catch(function (error) {
-        // The document probably doesn't exist.
-        console.error("Error updating document: ", error);
-      });
-    } else if (player == 2) {
-      db.collection("data").doc("users").update({
-        uid2: null
-      }).then(function () {
-        window.location.replace("../index.html");
-      }).catch(function (error) {
-        // The document probably doesn't exist.
-        console.error("Error updating document: ", error);
-      });
-    }
+    db.collection("data").doc("users").update({
+      uid1: null,
+      uid2: null
+    }).then(function () {
+      window.location.replace("../index.html");
+    }).catch(function (error) {
+      // The document probably doesn't exist.
+      console.error("Error updating document: ", error);
+    });
   }).catch((error) => {
     // An error happened.
   });
