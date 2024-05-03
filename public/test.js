@@ -123,6 +123,7 @@ function onClick(e) {
             x++;
         }
     }
+    
     /*
      * size / tSize = 4
      * よって
