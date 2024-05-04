@@ -7,7 +7,7 @@ const firebaseConfig = {
   messagingSenderId: "32628222705",
   appId: "1:32628222705:web:6784cadb557a1f8d301750",
   measurementId: "G-DFPZ7PDY47"
-};
+}
 
 var db = firebase.firestore(firebase.initializeApp(firebaseConfig));
 var date = new Date();
@@ -219,15 +219,15 @@ function init() {
 function logout() {
   firebase.auth().signOut().then(() => {
     // Sign-out successful.
-    db.collection("data").doc("users").update({
-      uid1: null,
-      uid2: null
-    }).then(function () {
-      window.location.replace("../index.html");
-    }).catch(function (error) {
-      // The document probably doesn't exist.
-      console.error("Error updating document: ", error);
-    });
+      db.collection("data").doc("users").update({
+        uid1: null,
+        uid2: null
+      }).then(function () {
+        window.location.replace("../index.html");
+      }).catch(function (error) {
+        // The document probably doesn't exist.
+        console.error("Error updating document: ", error);
+      });
   }).catch((error) => {
     // An error happened.
   });
