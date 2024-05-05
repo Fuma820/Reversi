@@ -1,20 +1,5 @@
-const firebaseConfig = {
-    apiKey: "AIzaSyAdCIMrxlj-C0h1fAC8jZ3dtkpBlIZpTvc",
-    authDomain: "test-b1eea.firebaseapp.com",
-    databaseURL: "https://test-b1eea-default-rtdb.firebaseio.com",
-    projectId: "test-b1eea",
-    storageBucket: "test-b1eea.appspot.com",
-    messagingSenderId: "32628222705",
-    appId: "1:32628222705:web:6784cadb557a1f8d301750",
-    measurementId: "G-DFPZ7PDY47"
-}
-
-var db = firebase.firestore(firebase.initializeApp(firebaseConfig));
-var date = new Date();
-var noDBAccPeriod = 0;
-var limitTime = 10 * 60 * 1000;
 var uid = null;
-var player = 0;
+var player = 1;
 var context = document.querySelector("canvas").getContext("2d");
 var size = document.querySelector("canvas").width / 2;//フィールドの大きさ(6角形の1辺の長さ)
 var tSize = size / 4;// マス一辺の長さ
@@ -22,6 +7,7 @@ var cellSize = tSize * Math.sin(Math.PI / 3) * (2 / 3);//各頂点から外心�
 var row = 2 * size / tSize;
 var column = 4 * size / tSize + 1;
 var field = Array.from(new Array(column), () => new Array(row).fill(0));
+var nextList = Array.from(new Array());
 var currentStone = 1;
 var selectedX = 0;
 var selectedY = 0;
@@ -38,10 +24,10 @@ const BG_COLOR = "white";
 /**
  * 長方形を描画する関数
  * @param {*} color 
- * @param {*} x 左上のx座標
- * @param {*} y 左上の座標
- * @param {*} w 幅
- * @param {*} h 高さ
+ * @param {*} x 
+ * @param {*} y 
+ * @param {*} w 
+ * @param {*} h 
  */
 function drawRect(color, x, y, w, h) {
     context.fillStyle = color;
@@ -51,9 +37,9 @@ function drawRect(color, x, y, w, h) {
 /**
  * 円を描画する関数
  * @param {*} color 
- * @param {*} x 中心のx座標
- * @param {*} y 中心のy座標
- * @param {*} r 半径
+ * @param {*} x 
+ * @param {*} y 
+ * @param {*} r 
  */
 function drawCircle(color, x, y, r) {
     context.fillStyle = color;
@@ -64,7 +50,7 @@ function drawCircle(color, x, y, r) {
 }
 
 /**
- * 六角形描画する関数
+ * 六角形を描画する関数
  * @param {*} color 
  * @param {*} x 中心のx座標
  * @param {*} y 中心のy座標
@@ -198,7 +184,7 @@ function canPut(stone, x, y) {
 
 /**
  * 引数の方向に石をひっくり返していく再帰関数
- * @param {*} stone 
+ * @param {*} stone
  * @param {*} x 
  * @param {*} y 
  * @param {*} dx 
@@ -236,7 +222,6 @@ function autoPut() {
     if (currentStone > 3) currentStone = 1;
     updateField();
 }
-
 
 /**
  * ゲーム終了関数
@@ -279,9 +264,9 @@ function gameFinish() {
         }
     }
     message += "得点: " + point + "\n順位: " + ranking;
+    console.log(message);
     setTimeout(function(){alert(message)}, 1000);
 }
-
 
 /**
  * 盤面の情報を更新する関数
@@ -293,6 +278,7 @@ function updateField() {
     var y = 0;
     // 盤面表示
     drawRect(BG_COLOR, 0, 0, size * 2, size * Math.sin(Math.PI / 3) * 2);
+    nextList.length = 0;
     for (var i = 0; i < row; i++) {
         for (var j = 0; j < column; j++) {
             x = j * tSize / 2;
@@ -308,6 +294,7 @@ function updateField() {
             var bgColor = "green";// 通常マスは緑
             if (canPut(currentStone, j, i)) {
                 bgColor = "lime";// 次に置けるマスは薄緑
+                nextList.push([j, i]);
                 numOfCanPut++;
             }
             if (j == selectedX && i == selectedY) bgColor = "yellow";// 最後に石を置いたマスは黄色
@@ -324,6 +311,7 @@ function updateField() {
             }
         }
     }
+
     if (numOfCanPut == 0 && gameStatus == 1) {// 置けるマスがなければ番を交代
         currentStone++;
         if (currentStone > 3) currentStone = 1;
@@ -339,74 +327,6 @@ function updateField() {
 }
 
 /**
- * 画面クリック時関数
- * @param {*} e 
- */
-function onClick(e) {
-    db.collection("data").doc("field").onSnapshot(snapshot => {
-        if (snapshot.data().createdAt != null) {
-            noDBAccPeriod = date.getTime() - snapshot.data().createdAt.toDate().getTime();
-        }
-        if (noDBAccPeriod > limitTime) {
-            init();
-            logout();
-            return;
-        }
-    });
-    db.collection("data").doc("users").onSnapshot(snapshot => {
-        // ログインしていなければログインページに戻る
-        if (snapshot.data().uid1 != uid && snapshot.data().uid2 != uid && snapshot.data().uid3 != uid) {
-            logout();
-            return;
-        }
-        // 自分の番か判定
-        if (snapshot.data().uid3 != null && currentStone != player) return;
-
-        // クリックされたマスの座標を取得
-        var rect = e.target.getBoundingClientRect();
-        var y = Math.floor((e.clientY - rect.top) / (cellSize * 3 / 2));//クリックした値より小さい最大のマス
-        var x = Math.floor((e.clientX - rect.left) / (tSize / 2));//クリックした値より小さい最大のマス
-        if ((x + y) % 2 == 0) {//上向きの場合
-            //x,yが表す三角形の(一番上の)頂点を原点として相対的な座標でクリックしたマスのx座標がxかx＋１か判定する
-            var topOfTriangleY = y * cellSize * 3 / 2;
-            var topOfTriangleX = x * tSize / 2;
-            var relativeY = (e.clientY - rect.top) - topOfTriangleY;
-            var relativeX = (e.clientX - rect.left) - topOfTriangleX;
-            if (relativeY < 2 * Math.sin(Math.PI / 3) * relativeX) {
-                x++;
-            }
-        } else if ((x + y) % 2 == 1) {//下向きの場合
-            //x,yが表す三角形の(一番下の)頂点を原点として相対的な座標でクリックしたマスのx座標がxかx＋１か判定する
-            var topOfTriangleY = (y + 1) * cellSize * 3 / 2;
-            var topOfTriangleX = x * tSize / 2;
-            var relativeY = (e.clientY - rect.top) - topOfTriangleY;
-            var relativeX = (e.clientX - rect.left) - topOfTriangleX;
-            if (relativeY > - 2 * Math.sin(Math.PI / 3) * relativeX) {
-                x++;
-            }
-        }
-
-        if (checkOnField(x, y)) {
-            if (!canPut(currentStone, x, y)) return;
-            putStone(x, y, currentStone);
-            selectedX = x;
-            selectedY = y;
-            currentStone++;
-            if (currentStone > 3) currentStone = 1;
-            updateField();
-            db.collection("data").doc("field").update({
-                x: x,
-                y: y,
-                stone: currentStone,
-                field: JSON.stringify(field), // 配列をJSON形式で保存
-                uid: uid,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-        }
-    });
-}
-
-/**
  * フィールドを初期化する関数
  */
 function init() {
@@ -416,91 +336,71 @@ function init() {
     selectedY = 0;
     gameStatus = 1;
     skipNum = 0;
-    setStone(8, 2, 1);
+    setStone(8, 2, 1);//
     setStone(8, 3, 1);
     setStone(8, 4, 1);
-    setStone(8, 5, 1);
-    setStone(6, 3, 2);
+    setStone(8, 5, 1);////
+    setStone(6, 3, 2);////
     setStone(7, 3, 2);
     setStone(9, 4, 2);
-    setStone(10, 4, 2);
-    setStone(9, 3, 3);
-    setStone(10, 3, 3);
+    setStone(10, 4, 2);//
+    setStone(6, 4, 3);//
     setStone(7, 4, 3);
-    setStone(6, 4, 3);
+    setStone(9, 3, 3);
+    setStone(10, 3, 3);////
     updateField();
-    // データベースを初期化
-    db.collection("data").doc("field").update({
-        x: selectedX,
-        y: selectedY,
-        uid: uid,
-        stone: currentStone,
-        field: JSON.stringify(field),
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
 }
 
 /**
- * ログアウト関数
+ * 画面クリック時関数
+ * @param {*} e 
  */
-function logout() {
-    firebase.auth().signOut().then(() => {
-        // Sign-out successful.
-        db.collection("data").doc("users").update({
-            uid1: null,
-            uid2: null,
-            uid3: null
-        });
-    }).catch((error) => {
-        // An error happened.
-        console.error("Error logout: ", error);
-    });
+function onClick(e) {
+    // 自分の番か判定
+    if (currentStone != player) return;
+
+    // クリックされたマスの座標を取得
+    var rect = e.target.getBoundingClientRect();
+    var y = Math.floor((e.clientY - rect.top) / (cellSize * 3 / 2));//クリックした値より小さい最大のマス
+    var x = Math.floor((e.clientX - rect.left) / (tSize / 2));//クリックした値より小さい最大のマス
+    if ((x + y) % 2 == 0) {//上向きの場合
+        //x,yが表す三角形の(一番上の)頂点を原点として相対的な座標でクリックしたマスのx座標がxかx＋１か判定する
+        var topOfTriangleY = y * cellSize * 3 / 2;
+        var topOfTriangleX = x * tSize / 2;
+        var relativeY = (e.clientY - rect.top) - topOfTriangleY;
+        var relativeX = (e.clientX - rect.left) - topOfTriangleX;
+        if (relativeY < 2 * Math.sin(Math.PI / 3) * relativeX) {
+            x++;
+        }
+    } else if ((x + y) % 2 == 1) {//下向きの場合
+        //x,yが表す三角形の(一番下の)頂点を原点として相対的な座標でクリックしたマスのx座標がxかx＋１か判定する
+        var topOfTriangleY = (y + 1) * cellSize * 3 / 2;
+        var topOfTriangleX = x * tSize / 2;
+        var relativeY = (e.clientY - rect.top) - topOfTriangleY;
+        var relativeX = (e.clientX - rect.left) - topOfTriangleX;
+        if (relativeY > - 2 * Math.sin(Math.PI / 3) * relativeX) {
+            x++;
+        }
+    }
+
+    if (checkOnField(x, y)) {
+        if (!canPut(currentStone, x, y)) return;
+        putStone(x, y, currentStone);
+        selectedX = x;
+        selectedY = y;
+        currentStone++;
+        if (currentStone > 3) currentStone = 1;
+        updateField();
+        var timer = null;
+        var count = 0;
+        var timer = setInterval(function () {
+            autoPut();
+            if (timer != null && count > 0 || gameStatus == 2) {
+                clearInterval(timer);
+            }
+            //count++;
+        }, 1000);
+    }
 }
 
-//ログイン状況が変化した場合呼び出す
-firebase.auth().onAuthStateChanged(function (user) {
-    // ログインしていない場合はログインページに移動
-    if (!user) window.location.replace("../index.html");
-    uid = user.uid;
-    db.collection("data").doc("field").onSnapshot(snapshot => {
-        if (snapshot.data().createdAt != null) {
-            noDBAccPeriod = date.getTime() - snapshot.data().createdAt.toDate().getTime();
-        }
-    });
-    db.collection("data").doc("users").onSnapshot(snapshot => {
-        // 最後の処理から10分以上経っていれば初期化する
-        if (noDBAccPeriod > limitTime) {
-            db.collection("data").doc("users").update({
-                uid1: uid,
-                uid2: null,
-                uid3: null
-            });
-            init();
-        }
-        // ログイン情報をデータベースに格納
-        if (snapshot.data().uid1 == uid || snapshot.data().uid1 == null) {
-            player = 1;
-            db.collection("data").doc("users").update({ uid1: uid });
-        } else if (snapshot.data().uid2 == uid || snapshot.data().uid2 == null) {
-            player = 2;
-            db.collection("data").doc("users").update({ uid2: uid });
-        }
-        else if (snapshot.data().uid3 == uid || snapshot.data().uid3 == null) {
-            player = 3;
-            db.collection("data").doc("users").update({ uid3: uid });
-            init();
-        }
-        else {// 4人以上ログインしている場合はログインページに戻る
-            logout();
-        }
-    });
-});
-
-// データベースからfieldの値を取得
-db.collection("data").doc("field").onSnapshot(snapshot => {
-    field = JSON.parse(snapshot.data().field);
-    selectedX = snapshot.data().x;
-    selectedY = snapshot.data().y;
-    currentStone = snapshot.data().stone;
-    updateField();
-});
+init();

@@ -227,9 +227,46 @@ function autoPut() {
  * ゲーム終了関数
  */
 function gameFinish() {
-    console.log("試合終了");
+    var message = "試合終了\n"
+    var point = 0;
+    var ranking = 0;
+    var pointOfPlayer1 = 0;
+    var pointOfPlayer2 = 0;
+    var pointOfPlayer3 = 0;
     gameStatus = 2;
+    //fieldの値からそれぞれの色の数を取得
+    //順位を決定
+    //順位とメッセージを表示
+    for (var i = 0; i < row; i++) {
+        for (var j = 0; j < column; j++) {
+            if (field[j][i] == 1) {
+                pointOfPlayer1++;
+            } else if (field[j][i] == 2) {
+                pointOfPlayer2++;
+            } else if (field[j][i] == 3) {
+                pointOfPlayer3++;
+            }
+        }
+    }
+    if (player == 1) {
+        point = pointOfPlayer1;
+    } else if (player == 2) {
+        point = pointOfPlayer2;
+    } else if (player == 3) {
+        point = pointOfPlayer3;
+    }
+    var pointList = [pointOfPlayer1, pointOfPlayer2, pointOfPlayer3];
+    pointList.sort();
+    for (var i = 0; i < pointList.length; i++) {
+        if (pointList[i] == point) {
+            ranking = i;
+            break;
+        }
+    }
+    message += "得点: " + point + "\n順位: " + ranking;
+    setTimeout(function(){alert(message)}, 1000);
 }
+
 /**
  * 盤面の情報を更新する関数
  */
@@ -276,7 +313,7 @@ function updateField() {
 
     if (numOfCanPut == 0 && gameStatus == 1) {// 置けるマスがなければ番を交代
         currentStone++;
-        if (currentStone > 3) currentStone == 1;
+        if (currentStone > 3) currentStone = 1;
         if (skipNum < 3) {
             skipNum++;
             updateField();
