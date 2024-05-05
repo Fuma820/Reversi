@@ -242,16 +242,14 @@ function autoPut() {
  * ゲーム終了関数
  */
 function gameFinish() {
-    var message = "試合終了\n"
+    var message = "試合終了\n";
     var point = 0;
     var ranking = 0;
     var pointOfPlayer1 = 0;
     var pointOfPlayer2 = 0;
     var pointOfPlayer3 = 0;
     gameStatus = 2;
-    //fieldの値からそれぞれの色の数を取得
-    //順位を決定
-    //順位とメッセージを表示
+
     for (var i = 0; i < row; i++) {
         for (var j = 0; j < column; j++) {
             if (field[j][i] == 1) {
@@ -274,12 +272,12 @@ function gameFinish() {
     pointList.sort();
     for (var i = 0; i < pointList.length; i++) {
         if (pointList[i] == point) {
-            ranking = i;
+            ranking = i + 1;
             break;
         }
     }
     message += "得点: " + point + "\n順位: " + ranking;
-    setTimeout(function(){alert(message)}, 1000);
+    setTimeout(function () { alert(message) }, 1000);
 }
 
 
