@@ -17,4 +17,8 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("ログインに失敗しました。もう一度お試しください。");
         });
     }
+    // シングルプレイボタンが押された時実行
+    document.getElementById("singlePlay_btn").onclick = () => {
+        window.location.replace("singlePlay.html");
+    }
 });

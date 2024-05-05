@@ -1,20 +1,5 @@
-// const firebaseConfig = {
-//     apiKey: "AIzaSyAdCIMrxlj-C0h1fAC8jZ3dtkpBlIZpTvc",
-//     authDomain: "test-b1eea.firebaseapp.com",
-//     databaseURL: "https://test-b1eea-default-rtdb.firebaseio.com",
-//     projectId: "test-b1eea",
-//     storageBucket: "test-b1eea.appspot.com",
-//     messagingSenderId: "32628222705",
-//     appId: "1:32628222705:web:6784cadb557a1f8d301750",
-//     measurementId: "G-DFPZ7PDY47"
-// }
-
-// var db = firebase.firestore(firebase.initializeApp(firebaseConfig));
-var date = new Date();
-var noDBAccPeriod = 0;
-var limitTime = 10 * 60 * 1000;
 var uid = null;
-var player = 0;
+var player = 1;
 var context = document.querySelector("canvas").getContext("2d");
 var size = document.querySelector("canvas").width / 2;//フィールドの大きさ(6角形の1辺の長さ)
 var tSize = size / 4;// マス一辺の長さ
@@ -22,10 +7,11 @@ var cellSize = tSize * Math.sin(Math.PI / 3) * (2 / 3);//各頂点から外心�
 var row = 2 * size / tSize;
 var column = 4 * size / tSize + 1;
 var field = Array.from(new Array(column), () => new Array(row).fill(0));
+var nextList = Array.from(new Array());
 var currentStone = 1;
 var selectedX = 0;
 var selectedY = 0;
-var numOfTarns = 0;
+var gameStatus = 0;
 var skipNum = 0;
 // 周囲のマスを表す配列(例：dx[0], dy[0]は右上のマスを表す)
 var dx = [1, 2, 1, -1, -2, -1];
@@ -33,16 +19,28 @@ var dy = [-1, 0, 1, 1, 0, -1];
 const COLOR_1 = "red";
 const COLOR_2 = "blue";
 const COLOR_3 = "white";
+const BG_COLOR = "white";
 
-updateField();
-
-// 長方形を描画する関数
+/**
+ * 長方形を描画する関数
+ * @param {*} color 
+ * @param {*} x 
+ * @param {*} y 
+ * @param {*} w 
+ * @param {*} h 
+ */
 function drawRect(color, x, y, w, h) {
     context.fillStyle = color;
     context.fillRect(x, y, w, h);
 }
 
-// 円を描画する
+/**
+ * 円を描画する関数
+ * @param {*} color 
+ * @param {*} x 
+ * @param {*} y 
+ * @param {*} r 
+ */
 function drawCircle(color, x, y, r) {
     context.fillStyle = color;
     context.beginPath();
@@ -52,23 +50,23 @@ function drawCircle(color, x, y, r) {
 }
 
 /**
- * 六角形を表す
+ * 六角形を描画する関数
  * @param {*} color 
  * @param {*} x 中心のx座標
  * @param {*} y 中心のy座標
  */
-function drawHexagon(color, x, y) {
-    var degree = 0;
-    context.fillStyle = color;
-    context.beginPath();
-    context.moveTo(x + size, y);
-    for (var i = 1; i < 6; i++) {
-        degree += Math.PI / 3;
-        context.lineTo(x + size * Math.cos(degree), y - size * Math.sin(degree));
-    }
-    context.closePath();
-    context.fill();
-}
+// function drawHexagon(color, x, y) {
+//     var degree = 0;
+//     context.fillStyle = color;
+//     context.beginPath();
+//     context.moveTo(x + size, y);
+//     for (var i = 1; i < 6; i++) {
+//         degree += Math.PI / 3;
+//         context.lineTo(x + size * Math.cos(degree), y - size * Math.sin(degree));
+//     }
+//     context.closePath();
+//     context.fill();
+// }
 
 /**
  * 
@@ -98,6 +96,12 @@ function drawTriangle(color, x, y, direction) {
     context.stroke();
 }
 
+/**
+ * 引数で指定する座標がフィールド上であるか判定する関数
+ * @param {*} x 
+ * @param {*} y 
+ * @returns 
+ */
 function checkOnField(x, y) {
     /*
      * size / tSize = 4
@@ -121,23 +125,53 @@ function checkOnField(x, y) {
     return false;
 }
 
+/**
+ * field配列に引数の情報を格納する関数
+ * @param {*} x 
+ * @param {*} y 
+ * @param {*} stone 
+ * @returns 
+ */
 function setStone(x, y, stone) {
     if (!checkOnField(x, y)) return -1;
     field[x][y] = stone;
 }
 
+/**
+ * 引数で指定したマスの石の情報を返す関数
+ * @param {*} x 
+ * @param {*} y 
+ * @returns 引数で指定したマスの石の情報
+ */
 function getStone(x, y) {
     if (!checkOnField(x, y)) return -1;
     return field[x][y];
 }
 
+/**
+ * 引数の座標から引数で指定した方向に何個ひっくり返せるか
+ * 判定する再帰関数
+ * @param {*} stone 
+ * @param {*} x 
+ * @param {*} y 
+ * @param {*} dx 
+ * @param {*} dy 
+ * @param {*} n 
+ * @returns ひっくり返せる個数
+ */
 function getReversibleNum(stone, x, y, dx, dy, n) {
     if (getStone(x + dx, y + dy) < 1) return 0;
     if (getStone(x + dx, y + dy) == stone) return n;
     return getReversibleNum(stone, x + dx, y + dy, dx, dy, n + 1);
 }
 
-// 引数のマスに石を置けるか判定する関数
+/**
+ * 引数のマスに石を置けるか判定する関数
+ * @param {*} stone 
+ * @param {*} x 
+ * @param {*} y 
+ * @returns 
+ */
 function canPut(stone, x, y) {
     if (!checkOnField(x, y)) return false;
     if (getStone(x, y) > 0) return;
@@ -148,13 +182,27 @@ function canPut(stone, x, y) {
     return false;
 }
 
-// 引数の方向の石をひっくり返す関数
+/**
+ * 引数の方向に石をひっくり返していく再帰関数
+ * @param {*} stone
+ * @param {*} x 
+ * @param {*} y 
+ * @param {*} dx 
+ * @param {*} dy 
+ * @returns 
+ */
 function reverse(stone, x, y, dx, dy) {
     if (getStone(x + dx, y + dy) == stone) return;
     setStone(x + dx, y + dy, stone);
     reverse(stone, x + dx, y + dy, dx, dy);
 }
 
+/**
+ * 引数で指定したマスに石を置き，全ての方向のひっくり返せる石をひっくり返す関数
+ * @param {*} x 
+ * @param {*} y 
+ * @param {*} stone 
+ */
 function putStone(x, y, stone) {
     setStone(x, y, stone);
     for (var i = 0; i < 6; i++) {
@@ -162,21 +210,45 @@ function putStone(x, y, stone) {
     }
 }
 
+/**
+ * ランダムに自動で石を置く関数
+ */
+function autoPut() {
+    var index = Math.floor(Math.random() * nextList.length);
+    selectedX = nextList[index][0];
+    selectedY = nextList[index][1];
+    putStone(selectedX, selectedY, currentStone);
+    currentStone++;
+    if (currentStone > 3) currentStone = 1;
+    updateField();
+}
+
+/**
+ * ゲーム終了関数
+ */
+function gameFinish() {
+    console.log("試合終了");
+    gameStatus = 2;
+}
+/**
+ * 盤面の情報を更新する関数
+ */
 function updateField() {
     var direction = 1;
     var numOfCanPut = 0;
     var x = 0;
     var y = 0;
-
-    drawRect("black", 0, 0, size * 2, size * Math.sin(Math.PI / 3) * 2);
+    // 盤面表示
+    drawRect(BG_COLOR, 0, 0, size * 2, size * Math.sin(Math.PI / 3) * 2);
+    nextList.length = 0;
     for (var i = 0; i < row; i++) {
         for (var j = 0; j < column; j++) {
             x = j * tSize / 2;
             y = i * cellSize * 3 / 2 + 1;
-            if ((i + j) % 2 == 0) {
+            if ((i + j) % 2 == 0) {// 上向き
                 direction = 0;
                 y += cellSize;
-            } else {
+            } else { //下向き
                 direction = 1;
                 y += cellSize / 2;
             }
@@ -184,13 +256,13 @@ function updateField() {
             var bgColor = "green";// 通常マスは緑
             if (canPut(currentStone, j, i)) {
                 bgColor = "lime";// 次に置けるマスは薄緑
+                nextList.push([j, i]);
                 numOfCanPut++;
             }
-            if (j == selectedX && i == selectedY) bgColor = "yellow";// 石を置いたマスなら黄色
+            if (j == selectedX && i == selectedY) bgColor = "yellow";// 最後に石を置いたマスは黄色
 
             if (checkOnField(j, i)) {
                 drawTriangle(bgColor, x, y, direction);
-                //円の表示
                 if (field[j][i] == 1) {
                     drawCircle(COLOR_1, x, y, 0.9 * cellSize / 2);
                 } else if (field[j][i] == 2) {
@@ -201,34 +273,60 @@ function updateField() {
             }
         }
     }
-    // 置けるマスがなければ番を交代
-    console.log(numOfCanPut);
-    if (numOfCanPut == 0 && numOfTarns != 0) {
+
+    if (numOfCanPut == 0 && gameStatus == 1) {// 置けるマスがなければ番を交代
         currentStone++;
         if (currentStone > 3) currentStone == 1;
         if (skipNum < 3) {
             skipNum++;
             updateField();
-        } else {
-            //試合終了
-            console.log("試合終了");
+        } else {//全員スキップならば試合終了
+            gameFinish();
         }
     } else {
         skipNum = 0;
     }
 }
 
+/**
+ * フィールドを初期化する関数
+ */
+function init() {
+    field = Array.from(new Array(column), () => new Array(row).fill(0));
+    currentStone = 1;
+    selectedX = 0;
+    selectedY = 0;
+    gameStatus = 1;
+    skipNum = 0;
+    setStone(8, 2, 1);
+    setStone(8, 3, 1);
+    setStone(8, 4, 1);
+    setStone(8, 5, 1);
+    setStone(6, 3, 2);
+    setStone(7, 3, 2);
+    setStone(9, 4, 2);
+    setStone(10, 4, 2);
+    setStone(6, 4, 3);
+    setStone(7, 4, 3);
+    setStone(9, 3, 3);
+    setStone(10, 3, 3);
+    updateField();
+}
+
+/**
+ * ログアウト関数
+ */
+function logout() {
+    window.location.replace("index.html");
+}
+
+/**
+ * 画面クリック時関数
+ * @param {*} e 
+ */
 function onClick(e) {
-    // db.collection("data").doc("field").onSnapshot(snapshot => {
-    //     if (snapshot.data().createdAt != null) {
-    //         noDBAccPeriod = date.getTime() - snapshot.data().createdAt.toDate().getTime();
-    //     }
-    //     if (noDBAccPeriod > limitTime) {
-    //         init();
-    //         logout();
-    //         return;
-    //     }
-    // });
+    // 自分の番か判定
+    if (currentStone != player) return;
 
     // クリックされたマスの座標を取得
     var rect = e.target.getBoundingClientRect();
@@ -261,113 +359,17 @@ function onClick(e) {
         selectedY = y;
         currentStone++;
         if (currentStone > 3) currentStone = 1;
-        numOfTarns++;
         updateField();
-        // db.collection("data").doc("field").update({
-        //     x: x,
-        //     y: y,
-        //     stone: currentStone,
-        //     field: JSON.stringify(field), // 配列をJSON形式で保存
-        //     uid: uid,
-        //     createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        //   });
+        var timer = null;
+        var count = 0;
+        var timer = setInterval(function () {
+            autoPut();
+            if (timer != null && count > 0 || gameStatus == 2) {
+                clearInterval(timer);
+            }
+            count++;
+        }, 1000);
     }
 }
 
-/**
- * フィールドを初期化する関数
- */
-function init() {
-    field = Array.from(new Array(column), () => new Array(row).fill(0));
-    currentStone = 1;
-    selectedX = 0;
-    selectedY = 0;
-    numOfTarns = 1;
-    skipNum = 0;
-    setStone(8, 2, 1);
-    setStone(8, 3, 1);
-    setStone(8, 4, 1);
-    setStone(8, 5, 1);
-    setStone(6, 3, 2);
-    setStone(7, 3, 2);
-    setStone(9, 4, 2);
-    setStone(10, 4, 2);
-    setStone(9, 3, 3);
-    setStone(10, 3, 3);
-    setStone(7, 4, 3);
-    setStone(6, 4, 3);
-    updateField();
-    // データベースを初期化
-    //     db.collection("data").doc("field").update({
-    //         x: selectedX,
-    //         y: selectedY,
-    //         uid: uid,
-    //         stone: currentStone,
-    //         field: JSON.stringify(field),
-    //         createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    //     });
-}
-
-// ログアウト関数
-// function logout() {
-//     firebase.auth().signOut().then(() => {
-//         // Sign-out successful.
-//         db.collection("data").doc("users").update({
-//             uid1: null,
-//             uid2: null,
-//             uid3: null
-//         }).then(function () {
-//             window.location.replace("../index.html");
-//         }).catch(function (error) {
-//             // The document probably doesn't exist.
-//             console.error("Error updating document: ", error);
-//         });
-//     }).catch((error) => {
-//         // An error happened.
-//     });
-// }
-
-//ログイン状況が変化した場合呼び出す
-// firebase.auth().onAuthStateChanged(function (user) {
-//     // ログインしていない場合はログインページに移動
-//     if (!user) window.location.replace("../index.html");
-//     uid = user.uid;
-//     db.collection("data").doc("field").onSnapshot(snapshot => {
-//       if (snapshot.data().createdAt != null) {
-//         noDBAccPeriod = date.getTime() - snapshot.data().createdAt.toDate().getTime();
-//       }
-//     });
-//     db.collection("data").doc("users").onSnapshot(snapshot => {
-//       // 最後の処理から10分以上経っていれば初期化する
-//       if (noDBAccPeriod > limitTime
-//         && snapshot.data().uid1 != uid
-//         && snapshot.data().uid2 != uid) {
-//         db.collection("data").doc("users").update({
-//           uid1: null,
-//           uid2: null
-//         });
-//         init();
-//       }
-//       // ログイン情報をデータベースに格納
-//       if (snapshot.data().uid1 == uid || snapshot.data().uid1 == null) {
-//         player = 1;
-//         db.collection("data").doc("users").update({ uid1: uid });
-//       } else if (snapshot.data().uid2 == uid || snapshot.data().uid2 == null) {
-//         player = 2;
-//         db.collection("data").doc("users").update({ uid2: uid });
-//         init();
-//       }
-//       else {// 2人以上ログインしている場合はログインページに戻る
-//         logout();
-//       }
-//     });
-//   });
-
-// データベースからfieldの値を取得
-// db.collection("data").doc("field").onSnapshot(snapshot => {
-//     field = JSON.parse(snapshot.data().field);
-//     selectedX = snapshot.data().x;
-//     selectedY = snapshot.data().y;
-//     currentStone = snapshot.data().stone;
-//     checkField();
-// });
+init();
