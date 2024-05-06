@@ -256,7 +256,7 @@ function gameFinish() {
     pointList.sort();
     for (var i = 0; i < pointList.length; i++) {
         if (pointList[i] == point) {
-            ranking = i + 1;
+            ranking = 3 - i;
             break;
         }
     }
