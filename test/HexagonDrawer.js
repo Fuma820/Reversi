@@ -1,20 +1,21 @@
 class Hexagonrawer extends Drawer {
-    context;
-    
-    constructor(context) {
+
+    constructor(context, size) {
         super();
         this.context = context;
+        this.size = size;
     }
+
     draw(color, x, y) {
         var degree = 0;
-        context.fillStyle = color;
-        context.beginPath();
-        context.moveTo(x + size, y);
+        this.context.fillStyle = color;
+        this.context.beginPath();
+        this.context.moveTo(x + size, y);
         for (var i = 1; i < 6; i++) {
             degree += Math.PI / 3;
-            context.lineTo(x + size * Math.cos(degree), y - size * Math.sin(degree));
+            this.context.lineTo(x + this.size * Math.cos(degree), y - this.size * Math.sin(degree));
         }
-        context.closePath();
-        context.fill();
+        this.context.closePath();
+        this.context.fill();
     }
 }
