@@ -6,4 +6,12 @@ class CpuPlayer extends Player {
     getID() {
         return this.id;
     }
+
+    action(){
+        this.judge.autoPut(this.id);
+    }
+    
+    canAction(){
+        this.judge.checkCanPut();
+    }
 }

@@ -7,7 +7,16 @@ class HumanPlayer extends Player {
         return this.id;
     }
 
-    onClick(e){
-        this.judge.onClick(e, this.id);
+    action(e){
+        this.judge.putStone(e, this.id);
     }
+
+    canSelect(e){
+        return this.judge.canSelect(e);
+    }
+
+    canAction(){
+        this.judge.checkCanPut();
+    }
+
 }
