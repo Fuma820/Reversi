@@ -32,7 +32,7 @@ https://test-b1eea.firebaseapp.com
 
 - RIVER SEA GROUND
 
-    概要: WOOD LABO IKEDAとSukima.(CENSA.INC)のコラボ商品．六角形の盤面と三角形の駒を使った2人用リバーシ．
+    概要: 六角形の盤面と三角形の駒を使った2人用リバーシ．(WOOD LABO IKEDAとSukima.(CENSA.INC)のコラボ商品)
 https://censa.jp/c/riverseaground/
 
     ルール: https://censa.jp/c/riverseaground/download/riverseaground.rulebook.3.2.pdf
@@ -44,5 +44,5 @@ https://joe.sbody.info/%E5%85%AD%E8%A7%92%E3%82%AA%E3%82%BB%E3%83%AD/
 
 - Triversi(トリバーシ)
 
-    概要: 38個の点が描かれた盤面と赤，青，黄の駒を使った3人用リバーシ．
+    概要: 38個の点が描かれた盤面と赤，青，黄の駒を使った3人用リバーシ．(株式会社クリエイティブハウスキューズの商品)
 https://gamemarket.jp/game/180597
