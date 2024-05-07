@@ -1,17 +1,17 @@
 class Field {
-    constructor(context, size, tSize, cellSize, dx, dy) {
-        this.context = context;
-        this.size = size;
-        this.tSize = tSize;
-        this.cellSize = cellSize;
-        this.row = 2 * this.size / this.tSize;
-        this.column = 4 * this.size / this.tSize + 1;;
+    constructor(canvas, dx, dy) {
+        this.context = canvas.getContext("2d");
+        this.size = canvas.width / 2;//フィールドの大きさ(6角形の1辺の長さ)
+        this.tSize = this.size / 4;// マス一辺の長さ
+        this.cellSize = this.tSize * Math.sin(Math.PI / 3) * (2 / 3);//各頂点から外心までの距離(正三角形なので外心＝重心)
+        this.row = 8;
+        this.column = 16;;
         this.fieldList = Array.from(new Array(this.column), () => new Array(this.row).fill(0));
         this.nextList = Array.from(new Array());
         this.numOfCanPut = 0;
         // 周囲のマスを表す配列(例：dx[0], dy[0]は右上のマスを表す)
-        this.dx = dx;
-        this.dy = dy;
+        this.dx = [1, 2, 1, -1, -2, -1];
+        this.dy = [-1, 0, 1, 1, 0, -1];
         this.COLOR_1 = "red";
         this.COLOR_2 = "blue";
         this.COLOR_3 = "white";
@@ -76,10 +76,35 @@ class Field {
         return [pointOfPlayer1, pointOfPlayer2, pointOfPlayer3];
     }
 
-    getReversibleNum(stone, x, y, dx, dy, n) {
-        if (this.getStone(x + dx, y + dy) < 1) return 0;
-        if (this.getStone(x + dx, y + dy) == stone) return n;
-        return this.getReversibleNum(stone, x + dx, y + dy, dx, dy, n + 1);
+    getTriangle(clientX, clientY) {
+        var y = Math.floor(clientY / (this.cellSize * 3 / 2));//クリックした値より小さい最大のマス
+        var x = Math.floor(clientX / (this.tSize / 2));//クリックした値より小さい最大のマス
+        if ((x + y) % 2 == 0) {//上向きの場合
+            //x,yが表す三角形の(一番上の)頂点を原点として相対的な座標でクリックしたマスのx座標がxかx＋１か判定する
+            var topOfTriangleY = y * this.cellSize * 3 / 2;
+            var topOfTriangleX = x * this.tSize / 2;
+            var relativeY = clientY - topOfTriangleY;
+            var relativeX = clientX - topOfTriangleX;
+            if (relativeY < 2 * Math.sin(Math.PI / 3) * relativeX) {
+                x++;
+            }
+        } else if ((x + y) % 2 == 1) {//下向きの場合
+            //x,yが表す三角形の(一番下の)頂点を原点として相対的な座標でクリックしたマスのx座標がxかx＋１か判定する
+            var topOfTriangleY = (y + 1) * this.cellSize * 3 / 2;
+            var topOfTriangleX = x * this.tSize / 2;
+            var relativeY = clientY - topOfTriangleY;
+            var relativeX = clientX - topOfTriangleX;
+            if (relativeY > - 2 * Math.sin(Math.PI / 3) * relativeX) {
+                x++;
+            }
+        }
+        return [x, y];
+    }
+
+    getReversibleNum(stone, x, y, direction, n) {
+        if (this.getStone(x + this.dx[direction], y + this.dy[direction]) < 1) return 0;
+        if (this.getStone(x + this.dx[direction], y + this.dy[direction]) == stone) return n;
+        return this.getReversibleNum(stone, x + this.dx[direction], y + this.dy[direction], direction, n + 1);
     }
 
     setStone(x, y, stone) {
@@ -92,18 +117,18 @@ class Field {
         if (this.getStone(x, y) > 0) return;
         // 周囲のマスをひっくり返せるか確かめる
         for (var i = 0; i < 6; i++) {
-            if (this.getReversibleNum(stone, x, y, this.dx[i], this.dy[i], 0) > 0) return true;
+            if (this.getReversibleNum(stone, x, y, i, 0) > 0) return true;
         }
         return false;
     }
 
-    reverse(stone, x, y, dx, dy) {
-        if (this.getStone(x + dx, y + dy) == stone) return;
-        this.setStone(x + dx, y + dy, stone);
-        this.reverse(stone, x + dx, y + dy, dx, dy);
+    reverse(stone, x, y, direction) {
+        if (this.getStone(x + this.dx[direction], y + this.dy[direction]) == stone) return;
+        this.setStone(x + this.dx[direction], y + this.dy[direction], stone);
+        this.reverse(stone, x + this.dx[direction], y + this.dy[direction], direction);
     }
 
-    updateField(currentStone, selectedX, selectedY) {
+    update(currentStone, selectedX, selectedY) {
         var direction = 1;
         var x = 0;
         var y = 0;
