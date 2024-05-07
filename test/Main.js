@@ -1,9 +1,9 @@
-const field = new Field();
+const judge =new Judge();
 init();
 
 function init() {
-    field.init();}
+    judge.init();}
 
 function onClick(e) {
-    field.onClick(e);
+    judge.onClick(e);
 }
