@@ -4,6 +4,7 @@
 
 赤，青，白の3色の駒と96個の三角形のマスを持った六角形の盤面を使って，3人でプレイできるリバーシ．
 ![](./resource/patern_03.png)
+https://test-b1eea.firebaseapp.com
 
 ## ルール
 
