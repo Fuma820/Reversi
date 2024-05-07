@@ -7,7 +7,7 @@ class Judge {
         this.selectedY = 0;
         this.gameStatus = 0;
         this.skipNum = 0;
-        this.field = new Field(this.canvas, this.dx, this.dy);
+        this.field = new Field(this.canvas);
     }
 
     getGameStatus() {
@@ -85,7 +85,8 @@ class Judge {
         if (this.currentStone != this.player) return;
         // クリックされたマスの座標を取得
         var rect = e.target.getBoundingClientRect();
-        var triangle = this.field.getTriangle(e.clientX - rect.left, e.clientY - rect.top);
+        var resolution = this.canvas.width / Number(this.canvas.style.width.replace(/[^0-9]/g, ""));// canvasの解像度
+        var triangle = this.field.getTriangle(Math.floor((e.clientX - rect.left) * resolution), Math.floor((e.clientY - rect.top) * resolution));
         var x = triangle[0];
         var y = triangle[1];
 

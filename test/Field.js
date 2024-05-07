@@ -1,8 +1,8 @@
 class Field {
-    constructor(canvas, dx, dy) {
+    constructor(canvas) {
         this.context = canvas.getContext("2d");
-        this.size = canvas.width / 2;//フィールドの大きさ(6角形の1辺の長さ)
-        this.tSize = this.size / 4;// マス一辺の長さ
+        this.size = canvas.width / 2;//盤面の大きさ(6角形の1辺の長さ)
+        this.tSize = this.size / 4;// マスの大きさ(一辺の長さ)
         this.cellSize = this.tSize * Math.sin(Math.PI / 3) * (2 / 3);//各頂点から外心までの距離(正三角形なので外心＝重心)
         this.row = 8;
         this.column = 16;;
@@ -12,6 +12,7 @@ class Field {
         // 周囲のマスを表す配列(例：dx[0], dy[0]は右上のマスを表す)
         this.dx = [1, 2, 1, -1, -2, -1];
         this.dy = [-1, 0, 1, 1, 0, -1];
+        // 色の設定
         this.COLOR_1 = "red";
         this.COLOR_2 = "blue";
         this.COLOR_3 = "white";
