@@ -1,5 +1,5 @@
 class Field {
-    constructor(canvas) {
+    constructor(canvas, dataBaseManager) {
         this.context = canvas.getContext("2d");
         this.size = canvas.width / 2;//盤面の大きさ(6角形の1辺の長さ)
         this.tSize = this.size / 4;// マスの大きさ(一辺の長さ)
@@ -8,7 +8,7 @@ class Field {
         this.column = 16;;
         this.fieldList = Array.from(new Array(this.column), () => new Array(this.row).fill(0));
         this.nextList = Array.from(new Array());
-        this.numOfCanPut = 0;
+        this.placeableNum = 0;
         // 周囲のマスを表す配列(例：dx[0], dy[0]は右上のマスを表す)
         this.dx = [1, 2, 1, -1, -2, -1];
         this.dy = [-1, 0, 1, 1, 0, -1];
@@ -20,6 +20,7 @@ class Field {
         this.rectDrawer = new RectDrawer(this.context);
         this.circleDrawer = new CircleDrawer(this.context);
         this.triangleDrawer = new TriangleDrawer(this.context, this.cellSize);
+        this.dataBaseManager = dataBaseManager;
     }
 
     checkOnField(x, y) {
@@ -45,8 +46,8 @@ class Field {
         return false
     }
 
-    getNumOfCanPut() {
-        return this.numOfCanPut;
+    getPlaceableNum() {
+        return this.placeableNum;
     }
 
     getNextList() {
@@ -128,11 +129,11 @@ class Field {
         this.reverse(stone, x + this.dx[direction], y + this.dy[direction], direction);
     }
 
-    update(currentStone, selectedX, selectedY) {
+    draw(currentStone, selectedX, selectedY) {
         var direction = 1;
         var x = 0;
         var y = 0;
-        this.numOfCanPut = 0;
+        this.placeableNum = 0;
         // 盤面表示
         this.rectDrawer.draw(this.BG_COLOR, 0, 0, this.size * 2, this.size * Math.sin(Math.PI / 3) * 2);
         this.nextList.length = 0;
@@ -152,7 +153,7 @@ class Field {
                 if (this.canPut(currentStone, j, i)) {
                     bgColor = "lime";// 次に置けるマスは薄緑
                     this.nextList.push([j, i]);
-                    this.numOfCanPut++;
+                    this.placeableNum++;
                 }
                 if (j == selectedX && i == selectedY) bgColor = "yellow";// 最後に石を置いたマスは黄色
 
@@ -168,6 +169,11 @@ class Field {
                 }
             }
         }
+        //this.dataBaseManager.setFieldData(currentStone, selectedX, selectedY, this.fieldList)
+    }
+
+    set(fieldList) {
+        this.fieldList = fieldList;
     }
 
     reset() {
