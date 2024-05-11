@@ -73,7 +73,8 @@ class GameMaster {
         var ranking = 0;
         var point = 0;
         var pointList = this.field.getPointList();
-        if (this.playerList.length != 0) this.playerList[id - 1].setPoint(pointList[id - 1]);
+        if (this.playerList.length == 0) return;
+        this.playerList[id - 1].setPoint(pointList[id - 1]);
         point = pointList[id - 1];
         pointList.sort(function (a, b) { return b - a });
         console.log(pointList);
@@ -85,10 +86,10 @@ class GameMaster {
             }
         }
         message += "得点: " + point + "\n順位: " + ranking;
+        document.getElementById("start_btn").disabled = false;
         setTimeout((message) => {
             alert(message);
         }, 1000, message);
-
     }
 
     changeTurn() {

@@ -1,3 +1,8 @@
+//時間経過でログアウト機能追加
+//メッセージの表示方法変更
+//DBクラス作成
+//レスポンシブ対応
+
 const firebaseConfig = {
     apiKey: "AIzaSyAdCIMrxlj-C0h1fAC8jZ3dtkpBlIZpTvc",
     authDomain: "test-b1eea.firebaseapp.com",
@@ -33,6 +38,7 @@ function start() {
     if (id == 1) db.collection("data").doc("users").update({ status1: 1 });
     if (id == 2) db.collection("data").doc("users").update({ status2: 1 });
     if (id == 3) db.collection("data").doc("users").update({ status3: 1 });
+    document.getElementById("start_btn").disabled = true;
 }
 
 function onClick(e) {
@@ -176,7 +182,7 @@ db.collection("data").doc("users").onSnapshot(snapshot => {
         //     gameMaster.register(new CpuPlayer(i, gameMaster));
         // }
         gameMaster.init();// ゲームスタート
-    } else if (gameMaster.gameStatus == 1 && readyNum > 1) {// ゲーム中ログアウトしたプレイヤーがいればCPUに切り替える
+    } else if (gameMaster.gameStatus == 1 && readyNum > 1 && gameMaster.playerList.length != 0) {// ゲーム中ログアウトしたプレイヤーがいればCPUに切り替える
         if (snapshot.data().uid1 == null && gameMaster.getPlayer(1).getType() == "human") {
             gameMaster.release(1);
         }
