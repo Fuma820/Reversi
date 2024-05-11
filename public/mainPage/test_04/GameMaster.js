@@ -86,7 +86,7 @@ class GameMaster {
             }
         }
         message += "得点: " + point + "\n順位: " + ranking;
-        document.getElementById("start_btn").disabled = false;
+        // document.getElementById("start_btn").disabled = false;
         setTimeout((message) => {
             alert(message);
         }, 1000, message);
