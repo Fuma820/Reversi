@@ -1,11 +1,16 @@
 class Hexagonrawer extends Drawer {
-
     constructor(context, size) {
         super();
         this.context = context;
         this.size = size;
     }
 
+    /**
+     * 六角形を描画するメソッド
+     * @param {*} color 
+     * @param {*} x 
+     * @param {*} y 
+     */
     draw(color, x, y) {
         var degree = 0;
         this.context.fillStyle = color;

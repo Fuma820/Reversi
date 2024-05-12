@@ -4,6 +4,14 @@ class RectDrawer extends Drawer {
         this.context = context;
     }
 
+    /**
+     * 長方形を描画するメソッド
+     * @param {*} color 
+     * @param {*} x 
+     * @param {*} y 
+     * @param {*} w 
+     * @param {*} h 
+     */
     draw(color, x, y, w, h) {
         this.context.fillStyle = color;
         this.context.fillRect(x, y, w, h);

@@ -4,6 +4,13 @@ class CircleDrawer extends Drawer {
         this.context = context;
     }
     
+    /**
+     * 円を描画するメソッド
+     * @param {*} color 
+     * @param {*} x 
+     * @param {*} y 
+     * @param {*} r 
+     */
     draw(color, x, y, r) {
         this.context.fillStyle = color;
         this.context.beginPath();

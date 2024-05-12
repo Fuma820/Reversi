@@ -5,6 +5,14 @@ class TriangleDrawer extends Drawer {
         this.cellSize = cellSize
         this.strokeStyle = "black";
     }
+
+    /**
+     * 三角形を描画するメソッド
+     * @param {*} color 
+     * @param {*} x 
+     * @param {*} y 
+     * @param {*} direction 
+     */
     draw(color, x, y, direction) {
         var degree;
         if (direction == 0) {
@@ -12,9 +20,9 @@ class TriangleDrawer extends Drawer {
         } else if (direction == 1) {
             degree = -Math.PI / 2;
         }
-        
+
         this.context.fillStyle = color;
-        this.context.lineWidth=this.cellSize/50;
+        this.context.lineWidth = this.cellSize / 50;
         this.context.strokeStyle = this.strokeStyle;
         this.context.beginPath();
         this.context.moveTo(x + this.cellSize * Math.cos(degree), y - this.cellSize * Math.sin(degree));
