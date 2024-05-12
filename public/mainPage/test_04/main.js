@@ -23,19 +23,14 @@ const gameMaster = new GameMaster(canvas, db);
 
 // 情報を変数に格納
 db.collection("data").doc("field").get().then(doc => {
-    if (doc.exists) {
-        const selectedX = doc.data().x;
-        const selectedY = doc.data().y;
-        const currentStone = doc.data().stone;
-        const gameStatus = doc.data().gameStatus;
-        gameMaster.setData(currentStone, selectedX, selectedY, gameStatus, JSON.parse(doc.data().fieldList));
-    }
+    if (doc.data().gameStatus != 0) logout();
+        gameMaster.setData(doc.data().stone, doc.data().x, doc.data().y, doc.data().gameStatus, JSON.parse(doc.data().fieldList));
 });
 
 /**
  * ログアウト関数
  */
-function logout() {
+async function logout() {
     firebase.auth().signOut().then(() => {
         // Sign-out successful.
     }).catch((error) => {
@@ -48,13 +43,13 @@ function logout() {
  * 試合をリタイアする関数
  */
 async function retire() {
-    await db.collection("data").doc("users").get().then((doc) => {
+    await db.collection("data").doc("users").get().then(async (doc) => {
         var playerNum = 0
         if (doc.data().uid1 != null) playerNum++;
         if (doc.data().uid2 != null) playerNum++;
         if (doc.data().uid3 != null) playerNum++;
         if (playerNum == 1) {
-            db.collection("data").doc("users").update({
+            await db.collection("data").doc("users").update({
                 uid1: null,
                 uid2: null,
                 uid3: null,
@@ -62,25 +57,24 @@ async function retire() {
                 status2: 0,
                 status3: 0
             });
+            await gameMaster.init();
         } else {
             if (id == 1) db.collection("data").doc("users").update({ uid1: null });
             if (id == 2) db.collection("data").doc("users").update({ uid2: null });
             if (id == 3) db.collection("data").doc("users").update({ uid3: null });
         }
     });
-    logout();
+    await logout();
 }
 
 /**
  * ログイン状況からidを生成する関数
  */
-async function createId() {
-    await db.collection("data").doc("users").get().then((doc) => {
+function createId() {
+    db.collection("data").doc("users").get().then((doc) => {
         // ログイン情報をデータベースに格納
         if (doc.data().uid1 == uid || doc.data().uid1 == null) {
             id = 1;
-            gameMaster.init();
-            db.collection("data").doc("field").update({ gameStatus: 0 });
             db.collection("data").doc("users").update({ uid1: uid, status1: 0 });
         } else if (doc.data().uid2 == uid || doc.data().uid2 == null) {
             id = 2;
@@ -152,8 +146,9 @@ db.collection("data").doc("users").onSnapshot(snapshot => {
         if (snapshot.data().uid3 != null) {
             gameMaster.register(new HumanPlayer(3, gameMaster));
         } else { gameMaster.register(new CpuPlayer(3, gameMaster)); }
-        gameMaster.init();// ゲームスタート
-    } else if (gameMaster.gameStatus == 1 && readyNum > 1 && gameMaster.playerList.length != 0) {// ゲーム中ログアウトしたプレイヤーがいればCPUに切り替える
+        gameMaster.start();// ゲームスタート
+    } else if (gameMaster.gameStatus == 1 && readyNum > 1 && gameMaster.playerList.length != 0) {
+        // ゲーム中ログアウトしたプレイヤーがいればCPUに切り替える
         if (snapshot.data().uid1 == null && gameMaster.getPlayer(1).getType() == "human") {
             gameMaster.release(1);
         }

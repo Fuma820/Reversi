@@ -203,11 +203,11 @@ class GameMaster {
     /**
      * フィールドを初期化メソッド
      */
-    init() {
+    async init() {
         this.currentStone = 1;
         this.selectedX = 0;
         this.selectedY = 0;
-        this.gameStatus = 1;
+        this.gameStatus = 0;
         this.skipNum = 0;
         this.field.reset();
         this.db.collection("data").doc("field").update({
@@ -218,6 +218,15 @@ class GameMaster {
             fieldList: JSON.stringify(this.field.getFieldList()),
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
+    }
+
+    /**
+     * スタートメソッド
+     */
+    start() {
+        this.init();
+        this.gameStatus = 1;
+        this.db.collection("data").doc("field").update({ gameStatus: this.gameStatus });
         if (this.playerList.length != 0 && this.playerList[0].getType() == "cpu") {
             setTimeout((gameMaster) => { gameMaster.action(0, 0); }, 1000, this);
         }
