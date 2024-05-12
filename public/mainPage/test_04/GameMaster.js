@@ -137,7 +137,6 @@ class GameMaster {
         this.skipNum++;
         this.changeTurn();
         if (this.skipNum >= 3) {// 全員スキップならば試合終了
-            console.log("ゲーム終了");
             this.db.collection("data").doc("field").update({ gameStatus: 2 });
         }
     }

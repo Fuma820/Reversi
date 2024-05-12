@@ -16,4 +16,5 @@ class RectDrawer extends Drawer {
         this.context.fillStyle = color;
         this.context.fillRect(x, y, w, h);
     }
+    
 }

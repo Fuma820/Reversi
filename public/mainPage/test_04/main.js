@@ -1,7 +1,3 @@
-//メッセージの表示方法変
-//DBクラス作成
-//レスポンシブ対応
-
 const firebaseConfig = {
     apiKey: "AIzaSyAdCIMrxlj-C0h1fAC8jZ3dtkpBlIZpTvc",
     authDomain: "test-b1eea.firebaseapp.com",
@@ -18,7 +14,8 @@ var uid = null;
 var id = null;
 var noDBAccPeriod = 0;
 var limitTime = 10 * 60 * 1000;// [ms](10分)
-const canvas = document.querySelector("canvas");
+var canvas = document.querySelector("canvas");
+var resolution = canvas.width / document.querySelector("body").clientWidth;// canvasの解像度
 const gameMaster = new GameMaster(canvas, db);
 
 // 情報を変数に格納
@@ -81,7 +78,7 @@ async function retire() {
             if (id == 3) db.collection("data").doc("users").update({ uid3: null });
         }
     });
-    await logout();
+    await logout();;
 }
 
 /**
@@ -129,24 +126,27 @@ async function onClick(e) {
     });
     if (gameMaster.getStatus() == 0) return false;// ゲームがスタートしていなければリターン
     var rect = e.target.getBoundingClientRect();
-    var resolution = canvas.width / Number(canvas.style.width.replace(/[^0-9]/g, ""));// canvasの解像度
     var x = Math.floor((e.clientX - rect.left) * resolution);
     var y = Math.floor((e.clientY - rect.top) * resolution);
+    console.log(x + ", " + y);
     await gameMaster.getPlayer(id).request(x, y);
 }
 
 /**
- * ログイン状態変更時実行
+ * ウィンドウリサイズ時に実行
  */
+window.addEventListener("resize", () => {
+    resolution = canvas.width / document.querySelector("body").clientWidth;
+});
+
+// ログイン状態変更時実行
 firebase.auth().onAuthStateChanged((user) => {
     if (!user) window.location.replace("../index.html");
     uid = user.uid;
     createId();
 });
 
-/**
- * ユーザー情報更新時実行
- */
+// ユーザー情報更新時実行
 db.collection("data").doc("users").onSnapshot(snapshot => {
     var playerNum = 0;// ログインしている人数
     if (snapshot.data().uid1 != null) playerNum++;
@@ -183,9 +183,7 @@ db.collection("data").doc("users").onSnapshot(snapshot => {
     }
 });
 
-/**
- * フィールド情報更新時実行
- */
+// フィールド情報更新時実行
 db.collection("data").doc("field").onSnapshot(snapshot => {
     if (snapshot.data().gameStatus == 2) gameMaster.displayResult(id);
     gameMaster.setData(snapshot.data().stone, snapshot.data().x, snapshot.data().y,
