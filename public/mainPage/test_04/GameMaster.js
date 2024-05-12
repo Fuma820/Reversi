@@ -1,5 +1,4 @@
 class GameMaster {
-    playerNum;
     constructor(canvas, db) {
         this.canvas = canvas;
         this.currentStone = 0;

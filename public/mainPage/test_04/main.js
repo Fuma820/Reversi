@@ -1,8 +1,6 @@
-//時間経過でログアウト機能追加
-//メッセージの表示方法変更
+//メッセージの表示方法変
 //DBクラス作成
 //レスポンシブ対応
-//プレイ中にプレイヤー1が参加した場合
 
 const firebaseConfig = {
     apiKey: "AIzaSyAdCIMrxlj-C0h1fAC8jZ3dtkpBlIZpTvc",
@@ -18,13 +16,32 @@ const firebaseConfig = {
 var db = firebase.firestore(firebase.initializeApp(firebaseConfig));
 var uid = null;
 var id = null;
+var noDBAccPeriod = 0;
+var limitTime = 10 * 60 * 1000;// [ms](10分)
 const canvas = document.querySelector("canvas");
 const gameMaster = new GameMaster(canvas, db);
 
 // 情報を変数に格納
 db.collection("data").doc("field").get().then(doc => {
-    if (doc.data().gameStatus != 0) logout();
+    // 最後の処理からlimitTime以上経っていれば初期化する
+    if (doc.data().createdAt != null) {
+        noDBAccPeriod = new Date().getTime() - doc.data().createdAt.toDate().getTime();
+    }
+    if (noDBAccPeriod > limitTime) {
+        db.collection("data").doc("users").update({
+            uid1: null,
+            uid2: null,
+            uid3: null,
+            status1: 0,
+            status2: 0,
+            status3: 0
+        });
+        gameMaster.init();
+    } else if (doc.data().gameStatus != 0) {
+        logout();
+    } else {
         gameMaster.setData(doc.data().stone, doc.data().x, doc.data().y, doc.data().gameStatus, JSON.parse(doc.data().fieldList));
+    }
 });
 
 /**
@@ -78,12 +95,10 @@ function createId() {
             db.collection("data").doc("users").update({ uid1: uid, status1: 0 });
         } else if (doc.data().uid2 == uid || doc.data().uid2 == null) {
             id = 2;
-            if (gameMaster.getStatus() != 0) logout();
             db.collection("data").doc("users").update({ uid2: uid, status2: 0 });
         }
         else if (doc.data().uid3 == uid || doc.data().uid3 == null) {
             id = 3;
-            if (gameMaster.getStatus() != 0) logout();
             db.collection("data").doc("users").update({ uid3: uid, status3: 0 });
         } else { logout(); }// 4人以上ログインしている場合はログインページに戻る
     });
@@ -104,13 +119,20 @@ function ready() {
  * @param {*} e 
  * @returns 
  */
-function onClick(e) {
+async function onClick(e) {
+    // データベースに登録されていなければログアウト
+    await db.collection("data").doc("users").get().then((doc) => {
+        if (doc.data().uid1 != uid && doc.data().uid2 != uid && doc.data().uid3 != uid) {
+            logout();
+            return;
+        }
+    });
     if (gameMaster.getStatus() == 0) return false;// ゲームがスタートしていなければリターン
     var rect = e.target.getBoundingClientRect();
     var resolution = canvas.width / Number(canvas.style.width.replace(/[^0-9]/g, ""));// canvasの解像度
     var x = Math.floor((e.clientX - rect.left) * resolution);
     var y = Math.floor((e.clientY - rect.top) * resolution);
-    gameMaster.getPlayer(id).request(x, y);
+    await gameMaster.getPlayer(id).request(x, y);
 }
 
 /**
