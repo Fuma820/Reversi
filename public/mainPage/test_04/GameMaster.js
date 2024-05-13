@@ -12,6 +12,7 @@ class GameMaster {
         this.field = new Field(this.canvas);
         this.playerList = [];
         this.db = db;
+        this.messenger = new Messenger();
     }
 
     /**

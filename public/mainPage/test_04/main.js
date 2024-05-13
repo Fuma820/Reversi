@@ -18,6 +18,33 @@ var resolution = canvas.width / document.querySelector("body").clientWidth;// ca
 const gameMaster = new GameMaster(canvas, db);
 
 /**
+ * ログアウト関数
+ */
+async function logout() {
+    firebase.auth().signOut().then(() => {
+        // Sign-out successful.
+    }).catch((error) => {
+        // An error happened.
+        console.error("Error logout: ", error);
+    });
+}
+
+/**
+ * データベースのユーザーデータをリセットする関数
+ */
+async function resetUsersData() {
+    await db.collection("data").doc("users").update({
+        uid1: null,
+        uid2: null,
+        uid3: null,
+        status1: 0,
+        status2: 0,
+        status3: 0
+    });
+    await gameMaster.init();
+}
+
+/**
  * タイムアウト時の処理関数
  */
 function timeOutAction() {
@@ -27,30 +54,10 @@ function timeOutAction() {
             noDBAccPeriod = new Date().getTime() - doc.data().createdAt.toDate().getTime();
         }
         if (noDBAccPeriod > limitTime) {
-            db.collection("data").doc("users").update({
-                uid1: null,
-                uid2: null,
-                uid3: null,
-                status1: 0,
-                status2: 0,
-                status3: 0
-            });
-            gameMaster.init();
+            resetUsersData();
         } else if (doc.data().gameStatus != 0) {// 他の人が試合中ならログアウト
             logout();
         }
-    });
-}
-
-/**
- * ログアウト関数
- */
-async function logout() {
-    firebase.auth().signOut().then(() => {
-        // Sign-out successful.
-    }).catch((error) => {
-        // An error happened.
-        console.error("Error logout: ", error);
     });
 }
 
@@ -64,15 +71,7 @@ async function retire() {
         if (doc.data().uid2 != null) playerNum++;
         if (doc.data().uid3 != null) playerNum++;
         if (playerNum == 1) {// プレイヤーが一人しか参加していないならusersを初期化する
-            await db.collection("data").doc("users").update({
-                uid1: null,
-                uid2: null,
-                uid3: null,
-                status1: 0,
-                status2: 0,
-                status3: 0
-            });
-            await gameMaster.init();
+            await resetUsersData();
         } else {// データベースから自分のuidを削除する
             if (id == 1) db.collection("data").doc("users").update({ uid1: null });
             if (id == 2) db.collection("data").doc("users").update({ uid2: null });
@@ -179,8 +178,10 @@ db.collection("data").doc("users").onSnapshot(snapshot => {
         readyNum++;
         if (id == 3) document.getElementById("ready_btn").disabled = true;
     }
+
     if (gameMaster.gameStatus == 0 && playerNum != 0) {// 準備中の場合
         if (playerNum != readyNum) return;// ステータスが全員が準備中でないならreturn
+        // 参加者を登録(人数が足りなければ代わりにCPUを登録する)
         if (snapshot.data().uid1 != null) {
             gameMaster.register(new HumanPlayer(1, gameMaster));
         } else { gameMaster.register(new CpuPlayer(1, gameMaster)); }
