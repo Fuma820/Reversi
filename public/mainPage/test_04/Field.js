@@ -1,3 +1,6 @@
+/**
+ * 盤面を表すクラス
+ */
 class Field {
     constructor(canvas, dataBaseManager) {
         this.context = canvas.getContext("2d");

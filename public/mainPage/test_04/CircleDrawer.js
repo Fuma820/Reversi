@@ -1,3 +1,6 @@
+/**
+ * 円を描画するクラス
+ */
 class CircleDrawer extends Drawer {
     constructor(context) {
         super();

@@ -1,3 +1,6 @@
+/**
+ * 試合進行を行うクラス
+ */
 class GameMaster {
     constructor(canvas, db) {
         this.canvas = canvas;

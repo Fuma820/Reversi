@@ -1,3 +1,6 @@
+/**
+ * 長方形を描画するクラス
+ */
 class RectDrawer extends Drawer {
     constructor(context) {
         super();

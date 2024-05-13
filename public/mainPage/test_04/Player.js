@@ -1,3 +1,6 @@
+/**
+ * プレイヤークラス
+ */
 class Player {
     constructor(id, gameMaster) {
         this.id = id;
@@ -7,9 +10,9 @@ class Player {
     }
     //ゲッター
     getId() { return this.id; }
-    getPoint() { return this.point; }Ï
+    getPoint() { return this.point; }
     //セッター
     setPoint(point) { this.point = point; }
-    setRanking(ranking) { his.ranking = ranking; }
+    setRanking(ranking) { this.ranking = ranking; }
 
 }

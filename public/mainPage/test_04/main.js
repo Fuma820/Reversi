@@ -8,38 +8,39 @@ const firebaseConfig = {
     appId: "1:32628222705:web:6784cadb557a1f8d301750",
     measurementId: "G-DFPZ7PDY47"
 }
-
 var db = firebase.firestore(firebase.initializeApp(firebaseConfig));
-var uid = null;
-var id = null;
-var noDBAccPeriod = 0;
-var limitTime = 10 * 60 * 1000;// [ms](10分)
+var uid = null;// ユーザーのログイン状態を管理するためのID
+var id = null;// ゲーム内で使用するID
+var noDBAccPeriod = 0;// サーバーにアクセスしていない期間
+var limitTime = 10 * 60 * 1000;// 単位[ms]，タイムアウト時間(10分)
 var canvas = document.querySelector("canvas");
 var resolution = canvas.width / document.querySelector("body").clientWidth;// canvasの解像度
 const gameMaster = new GameMaster(canvas, db);
 
-// 情報を変数に格納
-db.collection("data").doc("field").get().then(doc => {
-    // 最後の処理からlimitTime以上経っていれば初期化する
-    if (doc.data().createdAt != null) {
-        noDBAccPeriod = new Date().getTime() - doc.data().createdAt.toDate().getTime();
-    }
-    if (noDBAccPeriod > limitTime) {
-        db.collection("data").doc("users").update({
-            uid1: null,
-            uid2: null,
-            uid3: null,
-            status1: 0,
-            status2: 0,
-            status3: 0
-        });
-        gameMaster.init();
-    } else if (doc.data().gameStatus != 0) {
-        logout();
-    } else {
-        gameMaster.setData(doc.data().stone, doc.data().x, doc.data().y, doc.data().gameStatus, JSON.parse(doc.data().fieldList));
-    }
-});
+/**
+ * タイムアウト時の処理関数
+ */
+function timeOutAction() {
+    db.collection("data").doc("field").get().then(doc => {
+        // 最後の処理からlimitTime以上経っていれば初期化する
+        if (doc.data().createdAt != null) {
+            noDBAccPeriod = new Date().getTime() - doc.data().createdAt.toDate().getTime();
+        }
+        if (noDBAccPeriod > limitTime) {
+            db.collection("data").doc("users").update({
+                uid1: null,
+                uid2: null,
+                uid3: null,
+                status1: 0,
+                status2: 0,
+                status3: 0
+            });
+            gameMaster.init();
+        } else if (doc.data().gameStatus != 0) {// 他の人が試合中ならログアウト
+            logout();
+        }
+    });
+}
 
 /**
  * ログアウト関数
@@ -54,15 +55,15 @@ async function logout() {
 }
 
 /**
- * 試合をリタイアする関数
+ * 試合をリタイア(終了)する関数
  */
 async function retire() {
     await db.collection("data").doc("users").get().then(async (doc) => {
-        var playerNum = 0
+        var playerNum = 0// 試合に参加している人数
         if (doc.data().uid1 != null) playerNum++;
         if (doc.data().uid2 != null) playerNum++;
         if (doc.data().uid3 != null) playerNum++;
-        if (playerNum == 1) {
+        if (playerNum == 1) {// プレイヤーが一人しか参加していないならusersを初期化する
             await db.collection("data").doc("users").update({
                 uid1: null,
                 uid2: null,
@@ -72,13 +73,13 @@ async function retire() {
                 status3: 0
             });
             await gameMaster.init();
-        } else {
+        } else {// データベースから自分のuidを削除する
             if (id == 1) db.collection("data").doc("users").update({ uid1: null });
             if (id == 2) db.collection("data").doc("users").update({ uid2: null });
             if (id == 3) db.collection("data").doc("users").update({ uid3: null });
         }
     });
-    await logout();;
+    await logout();
 }
 
 /**
@@ -86,16 +87,27 @@ async function retire() {
  */
 function createId() {
     db.collection("data").doc("users").get().then((doc) => {
-        // ログイン情報をデータベースに格納
-        if (doc.data().uid1 == uid || doc.data().uid1 == null) {
+        if (doc.data().uid1 == uid || doc.data().uid1 == null) {// データベースにuidとステータスを0で格納
             id = 1;
+            if (doc.data().status1 == 1) {
+                document.getElementById("ready_btn").disabled = true;
+                return;
+            }
             db.collection("data").doc("users").update({ uid1: uid, status1: 0 });
         } else if (doc.data().uid2 == uid || doc.data().uid2 == null) {
             id = 2;
+            if (doc.data().status2 == 1) {
+                document.getElementById("ready_btn").disabled = true;
+                return;
+            }
             db.collection("data").doc("users").update({ uid2: uid, status2: 0 });
         }
         else if (doc.data().uid3 == uid || doc.data().uid3 == null) {
             id = 3;
+            if (doc.data().status3 == 1) {
+                document.getElementById("ready_btn").disabled = true;
+                return;
+            }
             db.collection("data").doc("users").update({ uid3: uid, status3: 0 });
         } else { logout(); }// 4人以上ログインしている場合はログインページに戻る
     });
@@ -116,9 +128,9 @@ function ready() {
  * @param {*} e 
  * @returns 
  */
-async function onClick(e) {
+function onClick(e) {
     // データベースに登録されていなければログアウト
-    await db.collection("data").doc("users").get().then((doc) => {
+    db.collection("data").doc("users").get().then((doc) => {
         if (doc.data().uid1 != uid && doc.data().uid2 != uid && doc.data().uid3 != uid) {
             logout();
             return;
@@ -128,13 +140,10 @@ async function onClick(e) {
     var rect = e.target.getBoundingClientRect();
     var x = Math.floor((e.clientX - rect.left) * resolution);
     var y = Math.floor((e.clientY - rect.top) * resolution);
-    console.log(x + ", " + y);
-    await gameMaster.getPlayer(id).request(x, y);
+    gameMaster.getPlayer(id).request(x, y);
 }
 
-/**
- * ウィンドウリサイズ時に実行
- */
+// ウィンドウリサイズ時に実行
 window.addEventListener("resize", () => {
     resolution = canvas.width / document.querySelector("body").clientWidth;
 });
@@ -144,6 +153,11 @@ firebase.auth().onAuthStateChanged((user) => {
     if (!user) window.location.replace("../index.html");
     uid = user.uid;
     createId();
+    db.collection("data").doc("users").get().then(doc => {
+        if (uid != doc.data().uid1 && uid != doc.data().uid2 && uid != doc.data().uid3) {
+            timeOutAction();
+        }
+    });
 });
 
 // ユーザー情報更新時実行
@@ -153,10 +167,18 @@ db.collection("data").doc("users").onSnapshot(snapshot => {
     if (snapshot.data().uid2 != null) playerNum++;
     if (snapshot.data().uid3 != null) playerNum++;
     var readyNum = 0;// 準備完了した人数
-    if (snapshot.data().status1 == 1) readyNum++;
-    if (snapshot.data().status2 == 1) readyNum++;
-    if (snapshot.data().status3 == 1) readyNum++;
-
+    if (snapshot.data().status1 == 1) {
+        readyNum++;
+        if (id == 1) document.getElementById("ready_btn").disabled = true;
+    }
+    if (snapshot.data().status2 == 1) {
+        readyNum++;
+        if (id == 2) document.getElementById("ready_btn").disabled = true;
+    }
+    if (snapshot.data().status3 == 1) {
+        readyNum++;
+        if (id == 3) document.getElementById("ready_btn").disabled = true;
+    }
     if (gameMaster.gameStatus == 0 && playerNum != 0) {// 準備中の場合
         if (playerNum != readyNum) return;// ステータスが全員が準備中でないならreturn
         if (snapshot.data().uid1 != null) {
@@ -168,7 +190,6 @@ db.collection("data").doc("users").onSnapshot(snapshot => {
         if (snapshot.data().uid3 != null) {
             gameMaster.register(new HumanPlayer(3, gameMaster));
         } else { gameMaster.register(new CpuPlayer(3, gameMaster)); }
-        gameMaster.start();// ゲームスタート
     } else if (gameMaster.gameStatus == 1 && readyNum > 1 && gameMaster.playerList.length != 0) {
         // ゲーム中ログアウトしたプレイヤーがいればCPUに切り替える
         if (snapshot.data().uid1 == null && gameMaster.getPlayer(1).getType() == "human") {
@@ -181,11 +202,15 @@ db.collection("data").doc("users").onSnapshot(snapshot => {
             gameMaster.release(3);
         }
     }
+    // ゲームスタート判定
+    db.collection("data").doc("field").get().then(doc => {
+        if (doc.data().gameStatus == 0 && playerNum != 0) gameMaster.start();
+    });
 });
 
 // フィールド情報更新時実行
 db.collection("data").doc("field").onSnapshot(snapshot => {
-    if (snapshot.data().gameStatus == 2) gameMaster.displayResult(id);
+    if (snapshot.data().gameStatus == 2) gameMaster.displayResult(id); // 試合が終了していれば，試合結果を表示
     gameMaster.setData(snapshot.data().stone, snapshot.data().x, snapshot.data().y,
         snapshot.data().gameStatus, JSON.parse(snapshot.data().fieldList));
 });

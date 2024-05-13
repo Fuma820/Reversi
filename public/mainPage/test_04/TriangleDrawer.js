@@ -1,3 +1,6 @@
+/**
+ * 三角形を描画するクラス
+ */
 class TriangleDrawer extends Drawer {
     constructor(context, cellSize) {
         super();
