@@ -14,7 +14,7 @@ var id = null;// ゲーム内で使用するID
 var noDBAccPeriod = 0;// サーバーにアクセスしていない期間
 var limitTime = 10 * 60 * 1000;// 単位[ms]，タイムアウト時間(10分)
 var canvas = document.querySelector("canvas");
-var resolution = canvas.width / document.querySelector("body").clientWidth;// canvasの解像度
+var resolution = canvas.width / document.querySelector("canvas").clientWidth;// canvasの解像度
 const gameMaster = new GameMaster(canvas, db);
 
 /**
@@ -88,6 +88,7 @@ function createId() {
     db.collection("data").doc("users").get().then((doc) => {
         if (doc.data().uid1 == uid || doc.data().uid1 == null) {// データベースにuidとステータスを0で格納
             id = 1;
+            document.getElementById("player_color").textContent = "赤";
             if (doc.data().status1 == 1) {
                 document.getElementById("ready_btn").disabled = true;
                 return;
@@ -95,6 +96,7 @@ function createId() {
             db.collection("data").doc("users").update({ uid1: uid, status1: 0 });
         } else if (doc.data().uid2 == uid || doc.data().uid2 == null) {
             id = 2;
+            if (id == 2) document.getElementById("player_color").textContent = "青";
             if (doc.data().status2 == 1) {
                 document.getElementById("ready_btn").disabled = true;
                 return;
@@ -103,6 +105,7 @@ function createId() {
         }
         else if (doc.data().uid3 == uid || doc.data().uid3 == null) {
             id = 3;
+            if (id == 3) document.getElementById("player_color").textContent = "白";
             if (doc.data().status3 == 1) {
                 document.getElementById("ready_btn").disabled = true;
                 return;
@@ -144,7 +147,7 @@ function onClick(e) {
 
 // ウィンドウリサイズ時に実行
 window.addEventListener("resize", () => {
-    resolution = canvas.width / document.querySelector("body").clientWidth;
+    resolution = canvas.width / document.querySelector("canvas").clientWidth;
 });
 
 // ログイン状態変更時実行
@@ -178,6 +181,8 @@ db.collection("data").doc("users").onSnapshot(snapshot => {
         readyNum++;
         if (id == 3) document.getElementById("ready_btn").disabled = true;
     }
+    // 参加人数表示
+    document.getElementById("player_num").textContent = playerNum;
 
     if (gameMaster.gameStatus == 0 && playerNum != 0) {// 準備中の場合
         if (playerNum != readyNum) return;// ステータスが全員が準備中でないならreturn
@@ -214,4 +219,8 @@ db.collection("data").doc("field").onSnapshot(snapshot => {
     if (snapshot.data().gameStatus == 2) gameMaster.displayResult(id); // 試合が終了していれば，試合結果を表示
     gameMaster.setData(snapshot.data().stone, snapshot.data().x, snapshot.data().y,
         snapshot.data().gameStatus, JSON.parse(snapshot.data().fieldList));
+    //現在どの色のターンか表示
+    if (snapshot.data().stone == 1) document.getElementById("current_turn").textContent = "赤";
+    if (snapshot.data().stone == 2) document.getElementById("current_turn").textContent = "青";
+    if (snapshot.data().stone == 3) document.getElementById("current_turn").textContent = "白";
 });

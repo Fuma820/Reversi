@@ -46,3 +46,5 @@ https://joe.sbody.info/%E5%85%AD%E8%A7%92%E3%82%AA%E3%82%BB%E3%83%AD/
 
     概要: 38個の点が描かれた盤面と赤，青，黄の駒を使った3人用リバーシ．(株式会社クリエイティブハウスキューズの商品)
 https://gamemarket.jp/game/180597
+
+icon: https://icooon-mono.com/

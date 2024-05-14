@@ -19,7 +19,7 @@ class Field {
         this.COLOR_1 = "red";
         this.COLOR_2 = "blue";
         this.COLOR_3 = "white";
-        this.BG_COLOR = "white";
+        this.BG_COLOR ="rgba(" + [0, 0, 0, 0] + ")";
         this.rectDrawer = new RectDrawer(this.context);
         this.circleDrawer = new CircleDrawer(this.context);
         this.triangleDrawer = new TriangleDrawer(this.context, this.cellSize);

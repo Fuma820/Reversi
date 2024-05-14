@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Reversi</title>
+    <link rel="stylesheet" href="main.css">
+</head>
+
+<body>
+    <div id="header">
+        <img src="resorce/reversi.png" id="reversi_icon" width="20" height="20">
+        <h1 id="title">Reversi</h1>
+    </div>
+    <div id="info">
+        <div id="turn">
+            <div >あなたの色：<span id="player_colot"></span></div>
+            <div>現在のターン：<span id="current_turn"></span></div>
+        </div>
+        <div id="player">参加人数：<span id="player_num"></span></div>
+    </div>
+
+    <canvas width="3000" height="2598"></canvas>
+    <div id="ui">
+        <button id="ready_btn" onclick="ready()">準備完了</button>
+        <button id="logout_btn" onclick="retire()">リタイア</button>
+    </div>
+</body>
+
+</html>
