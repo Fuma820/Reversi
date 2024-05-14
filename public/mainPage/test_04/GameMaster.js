@@ -12,7 +12,6 @@ class GameMaster {
         this.field = new Field(this.canvas);
         this.playerList = [];
         this.db = db;
-        this.messenger = new Messenger();
     }
 
     /**
@@ -97,7 +96,7 @@ class GameMaster {
      * @returns 
      */
     displayResult(id) {
-        var message = "試合終了\n";
+        var message = "試合終了, ";
         var ranking = 0;
         var point = 0;
         var pointList = this.field.createPointList();
@@ -112,9 +111,9 @@ class GameMaster {
                 break;
             }
         }
-        message += "得点: " + point + "\n順位: " + ranking;
-        setTimeout((message) => { alert(message); }, 1000, message);
+        message += "得点: " + point + ", 順位: " + ranking;
         document.getElementById("logout_btn").textContent = "終了";
+        document.getElementById("message").textContent = message;
     }
 
     /**
@@ -232,6 +231,7 @@ class GameMaster {
         if (this.playerList.length != 0 && this.playerList[0].getType() == "cpu") {
             setTimeout((gameMaster) => { gameMaster.action(0, 0); }, 1000, this);
         }
+        document.getElementById("message").textContent = "ゲームスタート";
     }
 
 }

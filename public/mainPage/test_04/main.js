@@ -183,7 +183,7 @@ db.collection("data").doc("users").onSnapshot(snapshot => {
     }
     // 参加人数表示
     document.getElementById("player_num").textContent = playerNum;
-
+    document.getElementById("message").textContent = readyNum + "人が準備完了";
     if (gameMaster.gameStatus == 0 && playerNum != 0) {// 準備中の場合
         if (playerNum != readyNum) return;// ステータスが全員が準備中でないならreturn
         // 参加者を登録(人数が足りなければ代わりにCPUを登録する)
@@ -207,6 +207,7 @@ db.collection("data").doc("users").onSnapshot(snapshot => {
         if (snapshot.data().uid3 == null && gameMaster.getPlayer(3).getType() == "human") {
             gameMaster.release(3);
         }
+        document.getElementById("message").textContent = "プレイヤーがログアウトしました";
     }
     // ゲームスタート判定
     db.collection("data").doc("field").get().then(doc => {
