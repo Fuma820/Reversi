@@ -145,15 +145,32 @@ function onClick(e) {
     gameMaster.getPlayer(id).request(x, y);
 }
 
+function onClickMenu() {
+    document.getElementById("nav").classList.toggle("open-menu");
+    document.getElementById("menu_icon").innerHTML = document.getElementById("menu_icon").innerHTML === 'メニュー'
+        ? '閉じる' : 'メニュー';
+}
+
+async function updateName() {
+    db.collection("users").doc(uid).update({
+        name: document.getElementById("input_name").value
+    });
+}
+
 // ウィンドウリサイズ時に実行
 window.addEventListener("resize", () => {
     resolution = canvas.width / document.querySelector("canvas").clientWidth;
 });
 
 // ログイン状態変更時実行
-firebase.auth().onAuthStateChanged((user) => {
+firebase.auth().onAuthStateChanged(async (user) => {
     if (!user) window.location.replace("../index.html");
     uid = user.uid;
+    if (!db.collection("users").doc(uid).get()) {
+        db.collection("users").doc(uid).set({
+            uid: uid,
+        });
+    }
     createId();
     db.collection("data").doc("users").get().then(doc => {
         if (uid != doc.data().uid1 && uid != doc.data().uid2 && uid != doc.data().uid3) {
@@ -224,4 +241,10 @@ db.collection("data").doc("field").onSnapshot(snapshot => {
     if (snapshot.data().stone == 1) document.getElementById("current_turn").textContent = "赤";
     if (snapshot.data().stone == 2) document.getElementById("current_turn").textContent = "青";
     if (snapshot.data().stone == 3) document.getElementById("current_turn").textContent = "白";
+});
+
+db.collection("users").onSnapshot(snapshot => {
+    db.collection("users").doc(uid).get().then(doc => {
+        document.getElementById("input_name").value = doc.data().name;
+    });
 });

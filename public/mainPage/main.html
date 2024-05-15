@@ -14,8 +14,31 @@
 
 <body>
   <div id="header">
-    <img src="resorce/reversi.png" id="reversi_icon" width="20" height="20">
+    <img src="resorce/reversi.png" id="reversi_icon">
     <h1 id="title">Reversi</h1>
+    <img src="resorce/menu.png" id="menu_icon" onclick="onClickMenu()">
+    <nav id="nav">
+      <ul>
+        <div id="user_info">
+          <div>
+            <img src="resorce/user.png" id="user_icon">
+            ユーザー情報
+          </div>
+          <div id="name">
+            ユーザー名
+            <input type="text" id="input_name" value="未設定"/>
+            <button id="name_btn" onclick="updateName()">変更</button>
+          </div>
+        </div>
+        <li><a href="https://github.com/Fuma820/Reversi/tree/main">サービス概要</a>(github)</li>
+        <li><a href="https://github.com/Fuma820/Reversi/tree/main">ルール</a></li>
+        <li><a href="#">お問い合わせ</a></li>
+        <div>
+          <img src="resorce/setting.png" id="setting_icon">
+          設定
+        </div>
+      </ul>
+    </nav>
   </div>
   <div id="info">
     <div id="turn">
