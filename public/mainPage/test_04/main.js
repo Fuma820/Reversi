@@ -65,7 +65,7 @@ function timeOutAction() {
  * 試合をリタイア(終了)する関数
  */
 async function retire() {
-    await db.collection("data").doc("users").get().then(async (doc) => {
+    await db.collection("data").doc("users").get().then(async doc => {
         var playerNum = 0// 試合に参加している人数
         if (doc.data().uid1 != null) playerNum++;
         if (doc.data().uid2 != null) playerNum++;
@@ -73,9 +73,9 @@ async function retire() {
         if (playerNum == 1) {// プレイヤーが一人しか参加していないならusersを初期化する
             await resetUsersData();
         } else {// データベースから自分のuidを削除する
-            if (id == 1) db.collection("data").doc("users").update({ uid1: null });
-            if (id == 2) db.collection("data").doc("users").update({ uid2: null });
-            if (id == 3) db.collection("data").doc("users").update({ uid3: null });
+            if (id == 1) await db.collection("data").doc("users").update({ uid1: null });
+            if (id == 2) await db.collection("data").doc("users").update({ uid2: null });
+            if (id == 3) await db.collection("data").doc("users").update({ uid3: null });
         }
     });
     await logout();
@@ -84,8 +84,8 @@ async function retire() {
 /**
  * ログイン状況からidを生成する関数
  */
-function createId() {
-    db.collection("data").doc("users").get().then((doc) => {
+async function createId() {
+    db.collection("data").doc("users").get().then(doc => {
         if (doc.data().uid1 == uid || doc.data().uid1 == null) {// データベースにuidとステータスを0で格納
             id = 1;
             document.getElementById("player_color").textContent = "赤";
@@ -132,7 +132,7 @@ function ready() {
  */
 function onClick(e) {
     // データベースに登録されていなければログアウト
-    db.collection("data").doc("users").get().then((doc) => {
+    db.collection("data").doc("users").get().then(doc => {
         if (doc.data().uid1 != uid && doc.data().uid2 != uid && doc.data().uid3 != uid) {
             logout();
             return;
@@ -145,19 +145,19 @@ function onClick(e) {
     gameMaster.getPlayer(id).request(x, y);
 }
 
-function onClickMenu() {
-    document.getElementById("nav").classList.toggle("open-menu");
-    document.getElementById("menu_icon").innerHTML = document.getElementById("menu_icon").innerHTML === 'メニュー'
-        ? '閉じる' : 'メニュー';
-}
+/**
+ * メニューをスライドする関数
+ */
+function menuActive() { document.getElementById("menu-wrapper").classList.toggle("open"); }
 
-async function updateName() {
+/**
+ * ユーザー名を更新する関数
+ */
+function updateName() {
     db.collection("users").doc(uid).update({
         name: document.getElementById("input_name").value
     });
 }
-
-
 
 // ウィンドウリサイズ時に実行
 window.addEventListener("resize", () => {
@@ -165,16 +165,19 @@ window.addEventListener("resize", () => {
 });
 
 // ログイン状態変更時実行
-firebase.auth().onAuthStateChanged(async (user) => {
+firebase.auth().onAuthStateChanged(async user => {
     if (!user) window.location.replace("../index.html");
     uid = user.uid;
-    if (!db.collection("users").doc(uid).get()) {
-        db.collection("users").doc(uid).set({
-            uid: uid,
-        });
-    }
-    createId();
-    db.collection("data").doc("users").get().then(doc => {
+    await db.collection("users").doc(uid).get().then(doc => {
+        if (!doc.exists) {
+            db.collection("users").doc(uid).set({
+                uid: uid,
+                name: "未設定"
+            });
+        }
+    });
+    await createId();
+    await db.collection("data").doc("users").get().then(doc => {
         if (uid != doc.data().uid1 && uid != doc.data().uid2 && uid != doc.data().uid3) {
             timeOutAction();
         }
@@ -184,10 +187,27 @@ firebase.auth().onAuthStateChanged(async (user) => {
 // ユーザー情報更新時実行
 db.collection("data").doc("users").onSnapshot(snapshot => {
     var playerNum = 0;// ログインしている人数
-    if (snapshot.data().uid1 != null) playerNum++;
-    if (snapshot.data().uid2 != null) playerNum++;
-    if (snapshot.data().uid3 != null) playerNum++;
+    // プレイヤー人数を数え，名前を取得する
+    if (snapshot.data().uid1 != null) {
+        playerNum++;
+        db.collection("users").doc(snapshot.data().uid1).get().then(doc => {
+            if (doc.exists) document.getElementById("user_name1").textContent = doc.data().name;
+        });
+    }
+    if (snapshot.data().uid2 != null) {
+        playerNum++;
+        db.collection("users").doc(snapshot.data().uid2).get().then(doc => {
+            if (doc.exists) document.getElementById("user_name2").textContent = doc.data().name;
+        });
+    }
+    if (snapshot.data().uid3 != null) {
+        playerNum++;
+        db.collection("users").doc(snapshot.data().uid3).get().then(doc => {
+            if (doc.exists) document.getElementById("user_name3").textContent = doc.data().name;
+        });
+    }
     var readyNum = 0;// 準備完了した人数
+    // ステータスを取得し，数え，自分のステータスが1ならボタンを非活性化
     if (snapshot.data().status1 == 1) {
         readyNum++;
         if (id == 1) document.getElementById("ready_btn").disabled = true;
@@ -204,27 +224,40 @@ db.collection("data").doc("users").onSnapshot(snapshot => {
     document.getElementById("player_num").textContent = playerNum;
     document.getElementById("message").textContent = readyNum + "人が準備完了";
     if (gameMaster.gameStatus == 0 && playerNum != 0) {// 準備中の場合
-        if (playerNum != readyNum) return;// ステータスが全員が準備中でないならreturn
+        if (playerNum > readyNum) return;// ステータスが全員が準備中でないならreturn
         // 参加者を登録(人数が足りなければ代わりにCPUを登録する)
         if (snapshot.data().uid1 != null) {
             gameMaster.register(new HumanPlayer(1, gameMaster));
-        } else { gameMaster.register(new CpuPlayer(1, gameMaster)); }
+        } else {
+            gameMaster.register(new CpuPlayer(1, gameMaster));
+            document.getElementById("user_name1").textContent = "CPU";
+        }
         if (snapshot.data().uid2 != null) {
             gameMaster.register(new HumanPlayer(2, gameMaster));
-        } else { gameMaster.register(new CpuPlayer(2, gameMaster)); }
+        } else {
+            gameMaster.register(new CpuPlayer(2, gameMaster));
+            document.getElementById("user_name2").textContent = "CPU";
+        }
         if (snapshot.data().uid3 != null) {
             gameMaster.register(new HumanPlayer(3, gameMaster));
-        } else { gameMaster.register(new CpuPlayer(3, gameMaster)); }
-    } else if (gameMaster.gameStatus == 1 && readyNum > 1 && gameMaster.playerList.length != 0) {
+        } else {
+            gameMaster.register(new CpuPlayer(3, gameMaster));
+            document.getElementById("user_name3").textContent = "CPU";
+        }
+    } else if (gameMaster.gameStatus == 1 && readyNum > 1) {
         // ゲーム中ログアウトしたプレイヤーがいればCPUに切り替える
+        console.log("a");
         if (snapshot.data().uid1 == null && gameMaster.getPlayer(1).getType() == "human") {
             gameMaster.release(1);
+            document.getElementById("user_name1").textContent = "CPU";
         }
         if (snapshot.data().uid2 == null && gameMaster.getPlayer(2).getType() == "human") {
             gameMaster.release(2);
+            document.getElementById("user_name2").textContent = "CPU";
         }
         if (snapshot.data().uid3 == null && gameMaster.getPlayer(3).getType() == "human") {
             gameMaster.release(3);
+            document.getElementById("user_name3").textContent = "CPU";
         }
         document.getElementById("message").textContent = "プレイヤーがログアウトしました";
     }
@@ -237,6 +270,7 @@ db.collection("data").doc("users").onSnapshot(snapshot => {
 // フィールド情報更新時実行
 db.collection("data").doc("field").onSnapshot(snapshot => {
     if (snapshot.data().gameStatus == 2) gameMaster.displayResult(id); // 試合が終了していれば，試合結果を表示
+    if (snapshot.data().gameStatus == 1) document.getElementById("ready_btn").textContent = "";
     gameMaster.setData(snapshot.data().stone, snapshot.data().x, snapshot.data().y,
         snapshot.data().gameStatus, JSON.parse(snapshot.data().fieldList));
     //現在どの色のターンか表示
@@ -245,8 +279,10 @@ db.collection("data").doc("field").onSnapshot(snapshot => {
     if (snapshot.data().stone == 3) document.getElementById("current_turn").textContent = "白";
 });
 
+// ユーザー情報
 db.collection("users").onSnapshot(snapshot => {
     db.collection("users").doc(uid).get().then(doc => {
+        if (!doc.exists) return;
         document.getElementById("input_name").value = doc.data().name;
     });
 });

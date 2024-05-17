@@ -16,29 +16,48 @@
   <div id="header">
     <img src="resorce/reversi.png" id="reversi_icon">
     <h1 id="title">Reversi</h1>
-    <img src="resorce/menu.png" id="menu_icon" onclick="onClickMenu()">
-    <nav id="nav">
-      <ul>
-        <div id="user_info">
-          <div>
-            <img src="resorce/user.png" id="user_icon">
-            ユーザー情報
+    <div id="menu-wrapper">
+      <div id="hamburger" onclick="menuActive()">
+        <span class="hamburger_line" id="hamburger_line-1"></span>
+        <span class="hamburger_line" id="hamburger_line-2"></span>
+        <span class="hamburger_line" id="hamburger_line-3"></span>
+      </div>
+      <nav id="menu">
+        <ul>
+          <div id="user_info">
+            <div id="user_info_top">
+              <img src="resorce/user.png" id="user_icon">
+              <h3>ユーザー情報</h3>
+            </div>
+            <div id="name">
+              ユーザー名
+              <input type="text" id="input_name" value="未設定" />
+              <button id="name_btn" onclick="updateName()">変更</button>
+            </div>
           </div>
-          <div id="name">
-            ユーザー名
-            <input type="text" id="input_name" value="未設定" />
-            <button id="name_btn" onclick="updateName()">変更</button>
+          <hr>
+          <div id="member_info">
+            <div id="member_info_top">
+              <img src="resorce/member.png" id="member_icon">
+              <h3>参加メンバー</h3>
+            </div>
+            <ul>
+              <li id="player_1">赤: <span id="user_name1">未参加</span></li>
+              <li id="player_2">青: <span id="user_name2">未参加</span></li>
+              <li id="player_3">白: <span id="user_name3">未参加</span></li>
+            </ul>
           </div>
-        </div>
-        <li><a href="https://github.com/Fuma820/Reversi/tree/main">サービス概要</a>(github)</li>
-        <li><a href="https://github.com/Fuma820/Reversi/tree/main">ルール</a></li>
-        <li><a href="mailto:fuuma820@gmail.com">お問い合わせ</a></li>
-        <div>
-          <img src="resorce/setting.png" id="setting_icon">
-          設定
-        </div>
-      </ul>
-    </nav>
+          <hr>
+          <li><a href="https://github.com/Fuma820/Reversi/tree/main">サービス概要</a>(github)</li>
+          <li><a href="https://github.com/Fuma820/Reversi/tree/main">ルール</a></li>
+          <!-- <li><a href="">お問い合わせ</a></li> -->
+          <!-- <div>
+            <img src="resorce/setting.png" id="setting_icon">
+            設定
+          </div> -->
+        </ul>
+      </nav>
+    </div>
   </div>
   <div id="info">
     <div id="turn">

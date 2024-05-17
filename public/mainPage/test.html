@@ -5,40 +5,75 @@
     <meta charset="utf-8">
     <title>Reversi</title>
     <link rel="stylesheet" href="main.css">
+    <script src="test.js"></script>
 </head>
 
 <body>
     <div id="header">
         <img src="resorce/reversi.png" id="reversi_icon">
         <h1 id="title">Reversi</h1>
-        <img src="resorce/menu.png" id="menu_icon">
-        <nav>
-            <ul>
-                <li>
-                    <img src="resorce/user.png" id="user_icon">
-                    ユーザー情報
-                </li>
-                <li><a href="#">設定</a></li>
-                <li><a href="#">サービス概要</a></li>
-                <li><a href="#">ルール</a></li>
-                <li><a href="#">お問い合わせ</a></li>
-            </ul>
-        </nav>
+        <div id="menu-wrapper">
+            <div class="hamburger" id="hamburger">
+                <span class="hamburger_line" id="hamburger_line-1"></span>
+                <span class="hamburger_line" id="hamburger_line-2"></span>
+                <span class="hamburger_line" id="hamburger_line-3"></span>
+            </div>
+            <nav id="menu">
+                <ul>
+                    <div id="user_info">
+                        <div id="user_info_top">
+                            <img src="resorce/user.png" id="user_icon">
+                            <h3>ユーザー情報</h3>
+                        </div>
+                        <div id="name">
+                            ユーザー名
+                            <input type="text" id="input_name" value="未設定" />
+                            <button id="name_btn">変更</button>
+                        </div>
+                    </div>
+                    <hr>
+                    <div id="member_info">
+                        <div id="member_info_top">
+                            <img src="resorce/member.png" id="member_icon">
+                            <h3>参加メンバー</h3>
+                        </div>
+                        <ul>
+                            <li id="player_1">赤: <span id="user_name1">未参加</span></li>
+                            <li id="player_2">青: <span id="user_name2">未参加</span></li>
+                            <li id="player_3">白: <span id="user_name3">未参加</span></li>
+                        </ul>
+                    </div>
+                    <hr>
+                    <li><a href="#">設定</a></li>
+                    <li><a href="#">サービス概要</a></li>
+                    <li><a href="#">ルール</a></li>
+                    <li><a href="#">お問い合わせ</a></li>
+                    <div>
+                        <img src="resorce/setting.png" id="setting_icon">
+                        設定
+                    </div>
+                </ul>
+            </nav>
+        </div>
     </div>
     <div id="info">
         <div id="turn">
             <div>あなたの色：<span id="player_colot"></span></div>
             <div>現在のターン：<span id="current_turn"></span></div>
         </div>
-        <div id="player">参加人数：<span id="player_num"></span></div>
+        <div id="team">
+            <img src="resorce/team.png" id="team_icon" onclick="">
+            <div id="player">参加人数：<span id="player_num"></span></div>
+        </div>
     </div>
 
     <canvas width="3000" height="2598"></canvas>
+
     <div id="ui">
         <button id="ready_btn" class="btn" onclick="ready()">準備完了</button>
         <button id="logout_btn" class="btn" onclick="retire()">リタイア</button>
     </div>
-    <div id="message"></div>
+    <div id="message">メッセージ</div>
 </body>
 
 </html>
