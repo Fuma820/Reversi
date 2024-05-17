@@ -82,6 +82,22 @@ async function retire() {
 }
 
 /**
+ * 盤面の値を更新する関数
+ */
+async function fieldUpdate() {
+    db.collection("data").doc("field").get().then(doc => {
+        if (doc.data().gameStatus == 2) gameMaster.displayResult(id); // 試合が終了していれば，試合結果を表示
+        if (doc.data().gameStatus == 1) document.getElementById("ready_btn").textContent = "";
+        gameMaster.setData(doc.data().stone, doc.data().x, doc.data().y,
+            doc.data().gameStatus, JSON.parse(doc.data().fieldList));
+        //現在どの色のターンか表示
+        if (doc.data().stone == 1) document.getElementById("current_turn").textContent = "赤";
+        if (doc.data().stone == 2) document.getElementById("current_turn").textContent = "青";
+        if (doc.data().stone == 3) document.getElementById("current_turn").textContent = "白";
+    })
+}
+
+/**
  * ログイン状況からidを生成する関数
  */
 async function createId() {
@@ -168,7 +184,7 @@ window.addEventListener("resize", () => {
 firebase.auth().onAuthStateChanged(async user => {
     if (!user) window.location.replace("../index.html");
     uid = user.uid;
-    await db.collection("users").doc(uid).get().then(doc => {
+    db.collection("users").doc(uid).get().then(doc => {
         if (!doc.exists) {
             db.collection("users").doc(uid).set({
                 uid: uid,
@@ -176,16 +192,29 @@ firebase.auth().onAuthStateChanged(async user => {
             });
         }
     });
-    await createId();
-    await db.collection("data").doc("users").get().then(doc => {
+    createId();
+    db.collection("data").doc("users").get().then(doc => {
         if (uid != doc.data().uid1 && uid != doc.data().uid2 && uid != doc.data().uid3) {
             timeOutAction();
         }
     });
 });
 
+// ユーザー情報
+db.collection("users").onSnapshot(() => {
+    db.collection("users").doc(uid).get().then(doc => {
+        if (!doc.exists) return;
+        document.getElementById("input_name").value = doc.data().name;
+    });
+});
+
+// フィールド情報更新時実行
+db.collection("data").doc("field").onSnapshot(snapshot => {
+    fieldUpdate();
+});
+
 // ユーザー情報更新時実行
-db.collection("data").doc("users").onSnapshot(snapshot => {
+db.collection("data").doc("users").onSnapshot(async snapshot => {
     var playerNum = 0;// ログインしている人数
     // プレイヤー人数を数え，名前を取得する
     if (snapshot.data().uid1 != null) {
@@ -223,6 +252,7 @@ db.collection("data").doc("users").onSnapshot(snapshot => {
     // 参加人数表示
     document.getElementById("player_num").textContent = playerNum;
     document.getElementById("message").textContent = readyNum + "人が準備完了";
+    await fieldUpdate();
     if (gameMaster.gameStatus == 0 && playerNum != 0) {// 準備中の場合
         if (playerNum > readyNum) return;// ステータスが全員が準備中でないならreturn
         // 参加者を登録(人数が足りなければ代わりにCPUを登録する)
@@ -244,9 +274,8 @@ db.collection("data").doc("users").onSnapshot(snapshot => {
             gameMaster.register(new CpuPlayer(3, gameMaster));
             document.getElementById("user_name3").textContent = "CPU";
         }
-    } else if (gameMaster.gameStatus == 1 && readyNum > 1) {
+    } else if (gameMaster.gameStatus == 1) {
         // ゲーム中ログアウトしたプレイヤーがいればCPUに切り替える
-        console.log("a");
         if (snapshot.data().uid1 == null && gameMaster.getPlayer(1).getType() == "human") {
             gameMaster.release(1);
             document.getElementById("user_name1").textContent = "CPU";
@@ -264,25 +293,5 @@ db.collection("data").doc("users").onSnapshot(snapshot => {
     // ゲームスタート判定
     db.collection("data").doc("field").get().then(doc => {
         if (doc.data().gameStatus == 0 && playerNum != 0) gameMaster.start();
-    });
-});
-
-// フィールド情報更新時実行
-db.collection("data").doc("field").onSnapshot(snapshot => {
-    if (snapshot.data().gameStatus == 2) gameMaster.displayResult(id); // 試合が終了していれば，試合結果を表示
-    if (snapshot.data().gameStatus == 1) document.getElementById("ready_btn").textContent = "";
-    gameMaster.setData(snapshot.data().stone, snapshot.data().x, snapshot.data().y,
-        snapshot.data().gameStatus, JSON.parse(snapshot.data().fieldList));
-    //現在どの色のターンか表示
-    if (snapshot.data().stone == 1) document.getElementById("current_turn").textContent = "赤";
-    if (snapshot.data().stone == 2) document.getElementById("current_turn").textContent = "青";
-    if (snapshot.data().stone == 3) document.getElementById("current_turn").textContent = "白";
-});
-
-// ユーザー情報
-db.collection("users").onSnapshot(snapshot => {
-    db.collection("users").doc(uid).get().then(doc => {
-        if (!doc.exists) return;
-        document.getElementById("input_name").value = doc.data().name;
     });
 });

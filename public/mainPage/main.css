@@ -184,7 +184,6 @@ canvas {
     padding: 5px;
     transform: skew(-20deg);
     color: white;
-    font-style: italic;
     background-color: rgb(25 25 35);
 }
 
