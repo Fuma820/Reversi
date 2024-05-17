@@ -44,9 +44,10 @@ body {
 }
 
 #menu_icon {
-    width: 40px;
-    height: 40px;
+    width: 35px;
+    height: 35px;
     margin-left: auto;
+    margin-right: 10px;
     cursor: pointer;
 }
 
@@ -88,11 +89,21 @@ nav.open-menu {
     width: 100%;
     display: flex;
     padding: 10px;
+    align-items: center;
 }
 
-#player {
+#team{
     margin-left: auto;
+    display: flex;
+    flex-flow: column;
 }
+
+#team_icon{
+    width: 35px;
+    height: 35px;
+    padding-right: auto;
+}
+
 
 /* canvas */
 canvas {
@@ -105,4 +116,18 @@ canvas {
 #ui {
     width: 100%;
     padding: 10px;
+    
 }
+
+.btn {
+    padding: 5px;
+    transform: skew(-20deg);
+    color: #fff;
+    font-style: italic;
+    background-color: rgb(25 25 35);
+}
+
+
+.btn:hover {
+    background-color: rgb(50 50 60);
+  }

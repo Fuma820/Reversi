@@ -157,6 +157,8 @@ async function updateName() {
     });
 }
 
+
+
 // ウィンドウリサイズ時に実行
 window.addEventListener("resize", () => {
     resolution = canvas.width / document.querySelector("canvas").clientWidth;

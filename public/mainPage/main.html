@@ -26,13 +26,13 @@
           </div>
           <div id="name">
             ユーザー名
-            <input type="text" id="input_name" value="未設定"/>
+            <input type="text" id="input_name" value="未設定" />
             <button id="name_btn" onclick="updateName()">変更</button>
           </div>
         </div>
         <li><a href="https://github.com/Fuma820/Reversi/tree/main">サービス概要</a>(github)</li>
         <li><a href="https://github.com/Fuma820/Reversi/tree/main">ルール</a></li>
-        <li><a href="#">お問い合わせ</a></li>
+        <li><a href="mailto:fuuma820@gmail.com">お問い合わせ</a></li>
         <div>
           <img src="resorce/setting.png" id="setting_icon">
           設定
@@ -45,7 +45,10 @@
       <div>あなたの色：<span id="player_color"></span></div>
       <div>現在のターン：<span id="current_turn"></span></div>
     </div>
-    <div id="player">参加人数：<span id="player_num"></span></div>
+    <div id="team">
+      <img src="resorce/team.png" id="team_icon" onclick="">
+      <div id="player">参加人数：<span id="player_num"></span></div>
+    </div>
   </div>
   <canvas width="3000" height="2598" onclick="onClick(event)"></canvas>
 
@@ -60,8 +63,8 @@
   <script src="test_04/CpuPlayer.js"></script>
   <script src="test_04/main.js"></script>
   <div id="ui">
-    <button id="ready_btn" onclick="ready()">準備完了</button>
-    <button id="logout_btn" onclick="retire()">リタイア</button>
+    <button id="ready_btn" class="btn" onclick="ready()">準備完了</button>
+    <button id="logout_btn" class="btn" onclick="retire()">リタイア</button>
   </div>
   <div id="message"></div>
 </body>
