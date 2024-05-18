@@ -16,9 +16,9 @@ class HumanPlayer extends Player {
      * @param {*} y 
      * @returns 
      */
-    request(x, y) {
-        if (!this.gameMaster.canSelect(x, y, this.id)) return;
-        this.gameMaster.action(x, y);
-    }
+    // request(x, y) {
+    //     if (!this.gameMaster.canSelect(x, y, this.id)) return;
+    //     this.gameMaster.action(x, y);
+    // }
 
 }

@@ -37,5 +37,5 @@ class TriangleDrawer extends Drawer {
         this.context.fill();
         this.context.stroke();
     }
-    
+
 }

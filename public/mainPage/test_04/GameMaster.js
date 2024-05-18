@@ -42,6 +42,7 @@ class GameMaster {
         this.gameStatus = gameStatus;
         this.field.set(fieldList);
         this.field.draw(this.currentStone, this.selectedX, this.selectedY);
+        this.progress();
     }
 
     /**
@@ -50,11 +51,26 @@ class GameMaster {
      */
     setStatus(gameStatus) { this.gameStatus = gameStatus; }
 
+    progress() {
+        while (this.field.getPlaceableNum() == 0 && this.skipNum < 3) {
+            this.skipTurn();
+        }
+        if(this.playerList[this.currentStone - 1].getType() == "human") return;
+        if (this.playerList[this.currentStone - 1].getType() == "cpu" && this.skipNum < 3) {
+            setTimeout((gameMaster) => {
+                gameMaster.autoPut();
+                gameMaster.progress();
+            }, 1000, this);
+        }
+    }
+
     /**
      * プレイヤーの登録を行うメソッド
      * @param {*} player 
      */
-    register(player) { this.playerList.push(player); }
+    register(player) {
+        this.playerList.push(player);
+    }
 
     /**
      * プレイヤーの登録解除を行うメソッド
@@ -62,14 +78,9 @@ class GameMaster {
      */
     release(id) {
         this.playerList[id - 1] = new CpuPlayer(id, gameMaster);
-        if (this.currentStone == id) {//リリースされたプレイヤーのターンなら行動する
-            while (this.field.getPlaceableNum() == 0 && this.gameStatus == 1) {
-                this.skipTurn();
-            }
-            if (this.field.getPlaceableNum() != 0) {
-                setTimeout((gameMaster) => { gameMaster.action(0, 0); }, 1000, this);
-            }
-        }
+        // if (this.currentStone == id) {// リリースされたプレイヤーのターンなら行動する
+        this.progress();
+        // }
     }
 
     /**
@@ -81,13 +92,9 @@ class GameMaster {
         var type = this.playerList[this.currentStone - 1].getType();
         if (type == "human") {
             this.putStone(clientX, clientY);
-        } else if (type == "cpu") { this.autoPut(); }
-        while (this.field.getPlaceableNum() == 0 && this.skipNum < 3) {
-            this.skipTurn();
         }
-        if (this.playerList[this.currentStone - 1].getType() == "cpu" && this.skipNum < 3) {
-            setTimeout((gameMaster) => { gameMaster.action(clientX, clientY); }, 1000, this);
-        }
+        // else if (type == "cpu") { this.autoPut(); }
+        this.progress();
     }
 
     /**
@@ -232,6 +239,7 @@ class GameMaster {
             setTimeout((gameMaster) => { gameMaster.action(0, 0); }, 1000, this);
         }
         document.getElementById("message").textContent = "ゲームスタート";
+        document.getElementById("ready_btn").textContent = "";
     }
 
 }
