@@ -42,7 +42,6 @@ class GameMaster {
         this.gameStatus = gameStatus;
         this.field.set(fieldList);
         this.field.draw(this.currentStone, this.selectedX, this.selectedY);
-        this.progress();
     }
 
     /**
@@ -52,24 +51,27 @@ class GameMaster {
     setStatus(gameStatus) { this.gameStatus = gameStatus; }
 
     progress() {
+        if (this.gameStatus != 1) return;
         while (this.field.getPlaceableNum() == 0 && this.skipNum < 3) {
             this.skipTurn();
         }
-        if(this.playerList[this.currentStone - 1].getType() == "human") return;
-        if (this.playerList[this.currentStone - 1].getType() == "cpu" && this.skipNum < 3) {
-            setTimeout((gameMaster) => {
-                gameMaster.autoPut();
-                gameMaster.progress();
-            }, 1000, this);
-        }
+        if (this.playerList[this.currentStone - 1].getType() == "human" || this.skipNum >= 3) return;
+        setTimeout((gameMaster) => {
+            gameMaster.autoPut();
+            gameMaster.progress();
+        }, 1000, this);
     }
 
     /**
      * プレイヤーの登録を行うメソッド
      * @param {*} player 
      */
-    register(player) {
+    async register(player) {
         this.playerList.push(player);
+        await fieldUpdate();
+        if (this.gameStatus == 1 && this.playerList.length == 3) {
+            gameMaster.progress();
+        }
     }
 
     /**
@@ -78,9 +80,7 @@ class GameMaster {
      */
     release(id) {
         this.playerList[id - 1] = new CpuPlayer(id, gameMaster);
-        // if (this.currentStone == id) {// リリースされたプレイヤーのターンなら行動する
         this.progress();
-        // }
     }
 
     /**
@@ -235,9 +235,7 @@ class GameMaster {
         this.init();
         this.gameStatus = 1;
         this.db.collection("data").doc("field").update({ gameStatus: this.gameStatus });
-        if (this.playerList.length != 0 && this.playerList[0].getType() == "cpu") {
-            setTimeout((gameMaster) => { gameMaster.action(0, 0); }, 1000, this);
-        }
+        this.progress
         document.getElementById("message").textContent = "ゲームスタート";
         document.getElementById("ready_btn").textContent = "";
     }

@@ -85,7 +85,7 @@ async function retire() {
  * 盤面の値を更新する関数
  */
 async function fieldUpdate() {
-    db.collection("data").doc("field").get().then(doc => {
+    await db.collection("data").doc("field").get().then(doc => {
         if (doc.data().gameStatus == 2) gameMaster.displayResult(id); // 試合が終了していれば，試合結果を表示
         if (doc.data().gameStatus == 1) document.getElementById("ready_btn").textContent = "";
         gameMaster.setData(doc.data().stone, doc.data().x, doc.data().y,
@@ -168,7 +168,7 @@ window.addEventListener("resize", () => {
 });
 
 // ログイン状態変更時実行
-firebase.auth().onAuthStateChanged(async user => {
+firebase.auth().onAuthStateChanged(user => {
     if (!user) window.location.replace("../index.html");
     uid = user.uid;
     db.collection("users").doc(uid).get().then(doc => {
