@@ -1,5 +1,5 @@
 // ユーザー情報更新時実行
-db.collection("data").doc("users").onSnapshot(async snapshot => {
+db.collection("data").doc("users").onSnapshot(snapshot => {
     var playerNum = 0;// ログインしている人数
     // プレイヤー人数を数え，名前を取得する
     if (snapshot.data().uid1 != null) {
