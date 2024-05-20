@@ -30,6 +30,17 @@ async function logout() {
 }
 
 /**
+ * データベースに登録されていなければログアウトする関数
+ */
+async function checkLogin(){
+    await db.collection("data").doc("users").get().then(doc => {
+        if (doc.data().uid1 != uid && doc.data().uid2 != uid && doc.data().uid3 != uid) {
+            logout();
+        }
+    });
+}
+
+/**
  * データベースのユーザーデータをリセットする関数
  */
 async function resetUsersData() {
@@ -42,6 +53,22 @@ async function resetUsersData() {
         status3: 0
     });
     await gameMaster.init();
+}
+
+/**
+ * 盤面の値を更新する関数
+ */
+async function fieldUpdate() {
+    await db.collection("data").doc("field").get().then(doc => {
+        if (doc.data().gameStatus == 2) gameMaster.displayResult(id); // 試合が終了していれば，試合結果を表示
+        if (doc.data().gameStatus == 1) document.getElementById("ready_btn").textContent = "";
+        gameMaster.setData(doc.data().stone, doc.data().x, doc.data().y,
+            doc.data().gameStatus, JSON.parse(doc.data().fieldList));
+        //現在どの色のターンか表示
+        if (doc.data().stone == 1) document.getElementById("current_turn").textContent = "赤";
+        if (doc.data().stone == 2) document.getElementById("current_turn").textContent = "青";
+        if (doc.data().stone == 3) document.getElementById("current_turn").textContent = "白";
+    })
 }
 
 /**
@@ -82,32 +109,15 @@ async function retire() {
 }
 
 /**
- * 盤面の値を更新する関数
- */
-async function fieldUpdate() {
-    await db.collection("data").doc("field").get().then(doc => {
-        if (doc.data().gameStatus == 2) gameMaster.displayResult(id); // 試合が終了していれば，試合結果を表示
-        if (doc.data().gameStatus == 1) document.getElementById("ready_btn").textContent = "";
-        gameMaster.setData(doc.data().stone, doc.data().x, doc.data().y,
-            doc.data().gameStatus, JSON.parse(doc.data().fieldList));
-        //現在どの色のターンか表示
-        if (doc.data().stone == 1) document.getElementById("current_turn").textContent = "赤";
-        if (doc.data().stone == 2) document.getElementById("current_turn").textContent = "青";
-        if (doc.data().stone == 3) document.getElementById("current_turn").textContent = "白";
-    })
-}
-
-/**
  * ログイン状況からidを生成する関数
  */
 async function createId() {
-    db.collection("data").doc("users").get().then(doc => {
-        if (doc.data().uid1 == uid || doc.data().uid1 == null) {// データベースにuidとステータスを0で格納
+    await db.collection("data").doc("users").get().then(doc => {
+        if (doc.data().uid1 == uid || doc.data().uid1 == null) {
             id = 1;
             document.getElementById("player_color").textContent = "赤";
             if (doc.data().status1 == 1) {
                 document.getElementById("ready_btn").disabled = true;
-                return;
             }
             db.collection("data").doc("users").update({ uid1: uid, status1: 0 });
         } else if (doc.data().uid2 == uid || doc.data().uid2 == null) {
@@ -115,7 +125,6 @@ async function createId() {
             if (id == 2) document.getElementById("player_color").textContent = "青";
             if (doc.data().status2 == 1) {
                 document.getElementById("ready_btn").disabled = true;
-                return;
             }
             db.collection("data").doc("users").update({ uid2: uid, status2: 0 });
         }
@@ -124,7 +133,6 @@ async function createId() {
             if (id == 3) document.getElementById("player_color").textContent = "白";
             if (doc.data().status3 == 1) {
                 document.getElementById("ready_btn").disabled = true;
-                return;
             }
             db.collection("data").doc("users").update({ uid3: uid, status3: 0 });
         } else { logout(); }// 4人以上ログインしている場合はログインページに戻る
@@ -134,7 +142,8 @@ async function createId() {
 /**
  * 準備完了関数
  */
-function ready() {
+async function ready() {
+    await checkLogin();
     if (id == 1) db.collection("data").doc("users").update({ status1: 1 });
     if (id == 2) db.collection("data").doc("users").update({ status2: 1 });
     if (id == 3) db.collection("data").doc("users").update({ status3: 1 });
@@ -146,14 +155,8 @@ function ready() {
  * @param {*} e 
  * @returns 
  */
-function onClick(e) {
-    // データベースに登録されていなければログアウト
-    db.collection("data").doc("users").get().then(doc => {
-        if (doc.data().uid1 != uid && doc.data().uid2 != uid && doc.data().uid3 != uid) {
-            logout();
-            return;
-        }
-    });
+async function onClick(e) {
+    await checkLogin();
     if (gameMaster.getStatus() == 0) return false;// ゲームがスタートしていなければリターン
     var rect = e.target.getBoundingClientRect();
     var x = Math.floor((e.clientX - rect.left) * resolution);
@@ -168,7 +171,7 @@ window.addEventListener("resize", () => {
 });
 
 // ログイン状態変更時実行
-firebase.auth().onAuthStateChanged(user => {
+firebase.auth().onAuthStateChanged(async user => {
     if (!user) window.location.replace("../index.html");
     uid = user.uid;
     db.collection("users").doc(uid).get().then(doc => {
@@ -179,8 +182,8 @@ firebase.auth().onAuthStateChanged(user => {
             });
         }
     });
-    createId();
-    db.collection("data").doc("users").get().then(doc => {
+    await createId();
+    await db.collection("data").doc("users").get().then(doc => {
         if (uid != doc.data().uid1 && uid != doc.data().uid2 && uid != doc.data().uid3) {
             timeOutAction();
         }
