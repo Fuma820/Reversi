@@ -39,6 +39,5 @@ document.getElementById('contactForm').addEventListener('submit', async (e) => {
         alert('メッセージが送信されました。');
     } catch (error) {
         console.error("Error sending message: ", error);
-        alert('メッセージの送信に失敗しました。');
     }
 });

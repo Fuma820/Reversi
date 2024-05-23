@@ -2,16 +2,16 @@
  * 試合進行を行うクラス
  */
 class GameMaster {
-    constructor(canvas, db) {
+    constructor(field, dbManager) {
         this.canvas = canvas;
         this.currentStone = 0;
         this.selectedX = 0;
         this.selectedY = 0;
         this.gameStatus = 0;
         this.skipNum = 0;
-        this.field = new Field(this.canvas);
         this.playerList = [];
-        this.db = db;
+        this.field = field;
+        this.dbManager = dbManager;
     }
 
     /**
@@ -21,11 +21,10 @@ class GameMaster {
      */
     getPlayer(id) { return this.playerList[id - 1]; }
 
-    /**
-     * 現在のステータスを返すメソッド
-     * @returns 
-     */
+    // ゲッター
     getStatus() { return this.gameStatus; }
+    getCurrentStone() { return this.currentStone; }
+    getPlayerNum() { return this.playerList.length; }
 
     /**
      * 複数データのセッター
@@ -50,16 +49,13 @@ class GameMaster {
      */
     setStatus(gameStatus) { this.gameStatus = gameStatus; }
 
-    progress() {
+    async progress() {
         if (this.gameStatus != 1) return;
-        while (this.field.getPlaceableNum() == 0 && this.skipNum < 3) {
-            this.skipTurn();
-        }
+        while (this.field.getPlaceableNum() == 0 && this.skipNum < 3) this.skipTurn();
         if (this.playerList[this.currentStone - 1].getType() == "human" || this.skipNum >= 3) return;
-        setTimeout((gameMaster) => {
-            gameMaster.autoPut();
-            gameMaster.progress();
-        }, 1000, this);
+        await new Promise((resolve) => setTimeout(resolve, 1000));// 1秒まつ
+        gameMaster.autoPut();
+        gameMaster.progress();
     }
 
     /**
@@ -68,10 +64,7 @@ class GameMaster {
      */
     async register(player) {
         this.playerList.push(player);
-        await fieldUpdate();
-        if (this.gameStatus == 1 && this.playerList.length == 3) {
-            gameMaster.progress();
-        }
+        if (this.gameStatus == 1 && this.playerList.length == 3) gameMaster.progress();
     }
 
     /**
@@ -81,6 +74,7 @@ class GameMaster {
     release(id) {
         this.playerList[id - 1] = new CpuPlayer(id, gameMaster);
         this.progress();
+        document.getElementById("message").textContent = "プレイヤーがログアウトしました";
     }
 
     /**
@@ -89,11 +83,7 @@ class GameMaster {
       * @param {*} clientY 
       */
     action(clientX, clientY) {
-        var type = this.playerList[this.currentStone - 1].getType();
-        if (type == "human") {
-            this.putStone(clientX, clientY);
-        }
-        // else if (type == "cpu") { this.autoPut(); }
+        if (this.playerList[this.currentStone - 1].getType() == "human") this.putStone(clientX, clientY);
         this.progress();
     }
 
@@ -126,18 +116,11 @@ class GameMaster {
     /**
      * ターンを変更するメソッド
      */
-    changeTurn() {
+    async changeTurn() {
         this.currentStone++;
         if (this.currentStone > 3) this.currentStone = 1;
         this.field.draw(this.currentStone, this.selectedX, this.selectedY);
-        this.db.collection("data").doc("field").update({
-            x: this.selectedX,
-            y: this.selectedY,
-            stone: this.currentStone,
-            gameStatus: this.gameStatus,
-            fieldList: JSON.stringify(this.field.getFieldList()), // 配列をJSON形式で保存
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
+        await this.dbManager.setData(this.selectedX, this.selectedY, this.currentStone, this.gameStatus, this.field);
     }
 
     /**
@@ -146,9 +129,8 @@ class GameMaster {
     skipTurn() {
         this.skipNum++;
         this.changeTurn();
-        if (this.skipNum >= 3) {// 全員スキップならば試合終了
-            this.db.collection("data").doc("field").update({ gameStatus: 2 });
-        }
+        // 全員スキップならば試合終了
+        if (this.skipNum >= 3) this.db.collection("data").doc("field").update({ gameStatus: 2 });
     }
 
     /**
@@ -218,24 +200,17 @@ class GameMaster {
         this.gameStatus = 0;
         this.skipNum = 0;
         this.field.reset();
-        this.db.collection("data").doc("field").update({
-            x: this.selectedX,
-            y: this.selectedY,
-            stone: this.currentStone,
-            gameStatus: this.gameStatus,
-            fieldList: JSON.stringify(this.field.getFieldList()),
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
+        await this.dbManager.setData(this.selectedX, this.selectedY, this.currentStone, this.gameStatus, this.field);
     }
 
     /**
      * スタートメソッド
      */
-    start() {
+    async start() {
         this.init();
         this.gameStatus = 1;
-        this.db.collection("data").doc("field").update({ gameStatus: this.gameStatus });
-        this.progress
+        await this.dbManager.update("gameStatus", this.gameStatus);
+        await this.progress();
         document.getElementById("message").textContent = "ゲームスタート";
         document.getElementById("ready_btn").textContent = "";
     }
