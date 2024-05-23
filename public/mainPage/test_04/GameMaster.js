@@ -51,7 +51,7 @@ class GameMaster {
 
     async progress() {
         if (this.gameStatus != 1) return;
-        while (this.field.getPlaceableNum() == 0 && this.skipNum < 3) this.skipTurn();
+        while (this.field.getNextList().length == 0 && this.skipNum < 3) this.skipTurn();
         if (this.playerList[this.currentStone - 1].getType() == "human" || this.skipNum >= 3) return;
         await new Promise((resolve) => setTimeout(resolve, 1000));// 1秒まつ
         gameMaster.autoPut();
@@ -130,7 +130,7 @@ class GameMaster {
         this.skipNum++;
         this.changeTurn();
         // 全員スキップならば試合終了
-        if (this.skipNum >= 3) this.db.collection("data").doc("field").update({ gameStatus: 2 });
+        if (this.skipNum >= 3) this.dbManager.update("gameStatus", 2);
     }
 
     /**

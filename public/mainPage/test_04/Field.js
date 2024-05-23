@@ -10,8 +10,7 @@ class Field {
         this.row = 8;
         this.column = 16;;
         this.fieldList = Array.from(new Array(this.column), () => new Array(this.row).fill(0));
-        this.nextList = Array.from(new Array());
-        this.placeableNum = 0;
+        this.nextList = Array.from(new Array());// 次に石を置けるマスのリスト
         // 周囲のマスを表す配列(例：dx[0], dy[0]は右上のマスを表す)
         this.dx = [1, 2, 1, -1, -2, -1];
         this.dy = [-1, 0, 1, 1, 0, -1];
@@ -19,7 +18,10 @@ class Field {
         this.COLOR_1 = "red";
         this.COLOR_2 = "blue";
         this.COLOR_3 = "white";
-        this.BG_COLOR ="rgba(" + [0, 0, 0, 0] + ")";
+        this.BG_COLOR = "rgba(" + [0, 0, 0, 0] + ")";
+        this.NORMAL_CELL_COLOR = "green";
+        this.PLACEABLE_CELL_COLOR = "lime";
+        this.SELECTED_CELL_COLOR = "yellow";
         this.rectDrawer = new RectDrawer(this.context);
         this.circleDrawer = new CircleDrawer(this.context);
         this.triangleDrawer = new TriangleDrawer(this.context, this.cellSize);
@@ -28,7 +30,6 @@ class Field {
 
     // ゲッター
     getFieldList() { return this.fieldList; }
-    getPlaceableNum() { return this.placeableNum; }
     getNextList() { return this.nextList; }
 
     /**
@@ -69,7 +70,6 @@ class Field {
             var topOfTriangleX = x * this.tSize / 2;
             var relativeY = clientY - topOfTriangleY;
             var relativeX = clientX - topOfTriangleX;
-
             if (relativeY < 2 * Math.sin(Math.PI / 3) * relativeX) x++;
         } else if ((x + y) % 2 == 1) {//下向きの場合
             //x,yが表す三角形の(一番下の)頂点を原点として相対的な座標でクリックしたマスのx座標がxかx＋１か判定する
@@ -77,7 +77,6 @@ class Field {
             var topOfTriangleX = x * this.tSize / 2;
             var relativeY = clientY - topOfTriangleY;
             var relativeX = clientX - topOfTriangleX;
-
             if (relativeY > - 2 * Math.sin(Math.PI / 3) * relativeX) x++;
         }
         return [x, y];
@@ -160,7 +159,6 @@ class Field {
         var direction = 1;
         var x = 0;
         var y = 0;
-        this.placeableNum = 0;
 
         this.rectDrawer.draw(this.BG_COLOR, 0, 0, this.size * 2, this.size * Math.sin(Math.PI / 3) * 2);
         this.nextList.length = 0;
@@ -176,24 +174,18 @@ class Field {
                     y += this.cellSize / 2;
                 }
 
-                var bgColor = "green";// 通常マスは緑
+                var bgColor = this.NORMAL_CELL_COLOR;// 通常マスは緑
                 if (this.canPut(currentStone, j, i)) {
-                    bgColor = "lime";// 次に置けるマスは薄緑
+                    bgColor = this.PLACEABLE_CELL_COLOR;// 次に置けるマスは薄緑
                     this.nextList.push([j, i]);
-                    this.placeableNum++;
                 }
-                if (j == selectedX && i == selectedY) bgColor = "yellow";// 最後に石を置いたマスは黄色
+                if (j == selectedX && i == selectedY) bgColor = this.SELECTED_CELL_COLOR;// 最後に石を置いたマスは黄色
 
-                if (this.checkOnField(j, i)) {
-                    this.triangleDrawer.draw(bgColor, x, y, direction);
-                    if (this.getStone(j, i) == 1) {
-                        this.circleDrawer.draw(this.COLOR_1, x, y, 0.9 * this.cellSize / 2);
-                    } else if (this.getStone(j, i) == 2) {
-                        this.circleDrawer.draw(this.COLOR_2, x, y, 0.9 * this.cellSize / 2);
-                    } else if (this.getStone(j, i) == 3) {
-                        this.circleDrawer.draw(this.COLOR_3, x, y, 0.9 * this.cellSize / 2);
-                    }
-                }
+                if (!this.checkOnField(j, i)) continue;
+                this.triangleDrawer.draw(bgColor, x, y, direction);
+                if (this.getStone(j, i) == 1) this.circleDrawer.draw(this.COLOR_1, x, y, 0.9 * this.cellSize / 2);
+                else if (this.getStone(j, i) == 2) this.circleDrawer.draw(this.COLOR_2, x, y, 0.9 * this.cellSize / 2);
+                else if (this.getStone(j, i) == 3) this.circleDrawer.draw(this.COLOR_3, x, y, 0.9 * this.cellSize / 2);
             }
         }
     }
@@ -208,13 +200,9 @@ class Field {
         var pointOfPlayer3 = 0;
         for (var i = 0; i < this.row; i++) {
             for (var j = 0; j < this.column; j++) {
-                if (this.getStone(j, i) == 1) {
-                    pointOfPlayer1++;
-                } else if (this.getStone(j, i) == 2) {
-                    pointOfPlayer2++;
-                } else if (this.getStone(j, i) == 3) {
-                    pointOfPlayer3++;
-                }
+                if (this.getStone(j, i) == 1) pointOfPlayer1++;
+                else if (this.getStone(j, i) == 2) pointOfPlayer2++;
+                else if (this.getStone(j, i) == 3) pointOfPlayer3++;
             }
         }
         return [pointOfPlayer1, pointOfPlayer2, pointOfPlayer3];
