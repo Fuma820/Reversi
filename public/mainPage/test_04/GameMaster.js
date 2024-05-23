@@ -2,7 +2,7 @@
  * 試合進行を行うクラス
  */
 class GameMaster {
-    constructor(field, dbManager) {
+    constructor(field, dbManager, uiManager) {
         this.canvas = canvas;
         this.currentStone = 0;
         this.selectedX = 0;
@@ -12,6 +12,7 @@ class GameMaster {
         this.playerList = [];
         this.field = field;
         this.dbManager = dbManager;
+        this.uiManager = uiManager;
     }
 
     /**
@@ -64,6 +65,7 @@ class GameMaster {
      */
     async register(player) {
         this.playerList.push(player);
+        if (player.getType() == "cpu") this.uiManager.setText("user_name" + player.getId(), "CPU");
         if (this.gameStatus == 1 && this.playerList.length == 3) gameMaster.progress();
     }
 
@@ -73,8 +75,9 @@ class GameMaster {
      */
     release(id) {
         this.playerList[id - 1] = new CpuPlayer(id, gameMaster);
+        this.uiManager.setText("user_name" + id, "CPU");
+        this.uiManager.setText("message", "プレイヤーがログアウトしました");
         this.progress();
-        document.getElementById("message").textContent = "プレイヤーがログアウトしました";
     }
 
     /**
@@ -109,8 +112,8 @@ class GameMaster {
             }
         }
         message += "得点: " + point + ", 順位: " + ranking;
-        document.getElementById("logout_btn").textContent = "終了";
-        document.getElementById("message").textContent = message;
+        this.uiManager.setText("logout_btn", "終了");
+        this.uiManager.setText("message", message);
     }
 
     /**
@@ -211,8 +214,8 @@ class GameMaster {
         this.gameStatus = 1;
         await this.dbManager.update("gameStatus", this.gameStatus);
         await this.progress();
-        document.getElementById("message").textContent = "ゲームスタート";
-        document.getElementById("ready_btn").textContent = "";
+        this.uiManager.setText("message", "ゲームスタート");
+        this.uiManager.setText("ready_btn", "");
     }
 
 }

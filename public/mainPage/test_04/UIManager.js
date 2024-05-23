@@ -1,8 +1,9 @@
 class UIManager{
-    constructor(document){
-        this.document=document;
+    setText(id,text){
+        document.getElementById(id).textContent = text;
     }
 
-    
-
+    disableBtn(id){
+        document.getElementById(id).disable = true;
+    }
 }
