@@ -1,8 +1,16 @@
+/**
+ * データベースの更新，値の取得などを行うクラス
+ */
 class DBManager {
     constructor(db) {
         this.db = db;
     }
 
+    /**
+     * 引数のuidのユーザーidを取得するメソッド
+     * @param {*} uid 
+     * @returns 
+     */
     async getUserName(uid) {
         var result = "未設定";
         await db.collection("users").doc(uid).get().then(doc => {
@@ -11,6 +19,10 @@ class DBManager {
         return result;
     }
 
+    /**
+     * ゲームの状態を取得するメソッド
+     * @returns 
+     */
     async getGameStatus() {
         var result;
         await db.collection("data").doc("field").get().then(doc => {
@@ -19,6 +31,11 @@ class DBManager {
         return result;
     }
 
+    /**
+     * 引数のidの準備状況を取得するメソッド
+     * @param {*} id 
+     * @returns 
+     */
     async getStatus(id) {
         var result;
         await db.collection("data").doc("users").get().then(doc => {
@@ -29,6 +46,10 @@ class DBManager {
         return result;
     }
 
+    /**
+     * 参加プレイヤーの数を取得するメソッド
+     * @returns 
+     */
     async getPlayerNum() {
         var result = 0// 試合に参加している人数
         await db.collection("data").doc("users").get().then(doc => {
@@ -39,6 +60,10 @@ class DBManager {
         return result;
     }
 
+    /**
+     * 準備完了したプレイヤーの数を取得するメソッド
+     * @returns 
+     */
     async getReadyNum() {
         var result = 0// 試合に参加している人数
         await db.collection("data").doc("users").get().then(doc => {
@@ -49,6 +74,9 @@ class DBManager {
         return result;
     }
 
+    /**
+     * ゲームの参加ユーザー情報を初期化するメソッド
+     */
     async resetUsers() {
         await this.db.collection("data").doc("users").update({
             uid1: null,
@@ -60,6 +88,14 @@ class DBManager {
         });
     }
 
+    /**
+     * データベースの盤面のデータを更新するメソッド
+     * @param {*} selectedX 
+     * @param {*} selectedY 
+     * @param {*} currentStone 
+     * @param {*} gameStatus 
+     * @param {*} field 
+     */
     async setData(selectedX, selectedY, currentStone, gameStatus, field) {
         await this.db.collection("data").doc("field").update({
             x: selectedX,
@@ -71,6 +107,11 @@ class DBManager {
         });
     }
 
+    /**
+     * 引数に与えられたデータベースの情報を更新するメソッド
+     * @param {*} property 
+     * @param {*} value 
+     */
     async update(property, value) {
         if (property == "uid1") await db.collection("data").doc("users").update({ uid1: value });
         else if (property == "uid2") await db.collection("data").doc("users").update({ uid2: value });
@@ -81,6 +122,10 @@ class DBManager {
         else if (property == "gameStatus") await db.collection("data").doc("field").update({ gameStatus: value });
     }
 
+    /**
+     * ローカルの情報(gameMaster)をデータベースと同期させるメソッド
+     * @param {*} gameMaster 
+     */
     async syncWith(gameMaster) {
         await this.db.collection("data").doc("field").get().then(doc => {
             gameMaster.setData(doc.data().stone, doc.data().x, doc.data().y,
@@ -88,6 +133,9 @@ class DBManager {
         });
     }
 
+    /**
+     * ログアウトメソッド
+     */
     async logout() {
         firebase.auth().signOut().then(() => {
             // Sign-out successful.
@@ -97,6 +145,9 @@ class DBManager {
         });
     }
 
+    /**
+     * ログインしているか確認するメソッド
+     */
     async checkLogin() {
         await this.db.collection("data").doc("users").get().then(doc => {
             if (doc.data().uid1 != uid && doc.data().uid2 != uid && doc.data().uid3 != uid) {
@@ -105,6 +156,11 @@ class DBManager {
         });
     }
 
+    /**
+     * タイムアウトしているか確認するメソッド
+     * @param {*} limitTime 
+     * @returns 
+     */
     async checkTimeOut(limitTime) {
         var result = false;
         await db.collection("data").doc("field").get().then(doc => {
@@ -117,6 +173,10 @@ class DBManager {
         return result;
     }
 
+    /**
+     * ゲームで使用するidを生成するメソッド
+     * @returns 
+     */
     async createID() {
         var result = 0;
         await db.collection("data").doc("users").get().then(doc => {
@@ -130,10 +190,18 @@ class DBManager {
         return result;
     }
 
+    /**
+     * 個別情報を保持するドキュメントを作成するメソッド
+     * @param {*} uid 
+     */
     async createUserDoc(uid) {
         await db.collection("users").doc(uid).set({ uid: uid, name: "未設定" });
     }
 
+    /**
+     * 個別情報を保持するドキュメントが存在するか確認するメソッド
+     * @returns 
+     */
     async existUserData() {
         var result = false;
         await db.collection("users").doc(uid).get().then(doc => {
@@ -142,7 +210,12 @@ class DBManager {
         return result;
     }
 
-    async existPlayer() {
+    /**
+     * 引数のuidがゲームに参加しているか確認するメソッド
+     * @param {*} uid 
+     * @returns 
+     */
+    async existPlayer(uid) {
         var result = true;
         await db.collection("data").doc("users").get().then(doc => {
             if (uid != doc.data().uid1 && uid != doc.data().uid2 && uid != doc.data().uid3) {
@@ -152,6 +225,10 @@ class DBManager {
         return result;
     }
 
+    /**
+     * 参加プレイヤーの情報から引数のプレイヤーuidを削除する
+     * @param {*} id 
+     */
     async deleteUser(id) {
         if (id == 1) await db.collection("data").doc("users").update({ uid1: null, status1: 0 });
         else if (id == 2) await db.collection("data").doc("users").update({ uid2: null, status2: 0 });

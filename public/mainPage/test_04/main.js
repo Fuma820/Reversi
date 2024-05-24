@@ -91,7 +91,7 @@ firebase.auth().onAuthStateChanged(async user => {
     uid = user.uid;
     if (!await dbManager.existUserData()) await dbManager.createUserDoc(uid);
     id = await dbManager.createID();
-    if (!await dbManager.existPlayer()) await timeOutAction();
+    if (!await dbManager.existPlayer(uid)) await timeOutAction();
     // UIを同期
     if (dbManager.getStatus(id) == 1) uiManager.disableBtn("ready_btn");
     var color = id == 1 ? id == 2 ? id == 3 ? "赤" : "青" : "白" : "";
