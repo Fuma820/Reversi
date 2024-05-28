@@ -6,6 +6,11 @@ class DBManager {
         this.db = db;
     }
 
+    /**
+     * 引数のidのユーザーのuidを取得するメソッド
+     * @param {*} id 
+     * @returns 
+     */
     async getUid(id) {
         var result;
         await db.collection("data").doc("users").get().then(async doc => {

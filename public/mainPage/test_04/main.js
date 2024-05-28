@@ -142,6 +142,7 @@ db.collection("data").doc("users").onSnapshot(async snapshot => {
     }
 });
 
+// ユーザー名変更時実行
 db.collection("users").onSnapshot(async () => {
     var uid1 = await dbManager.getUid(1);
     var uid2 = await dbManager.getUid(2);
