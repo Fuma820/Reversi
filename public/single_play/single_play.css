@@ -1,0 +1,196 @@
+*,
+*:before,
+*:after {
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box
+}
+
+h3{
+    height: fit-content;
+    margin: 0;
+}
+
+body {
+    display: flex;
+    flex-flow: column;
+    align-items: center;
+    background-color: gray;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+/* ヘッダー */
+#header {
+    width: 100%;
+    height: 100px;
+    background-color: rgb(25 25 35);
+    display: flex;
+    align-items: center;
+    padding: 5px;
+}
+
+#header>* {
+    padding: 5px;
+}
+
+#reversi_icon {
+    width: 30px;
+    height: 30px;
+}
+
+#title {
+    width: fit-content;
+    color: white;
+    font-style: italic;
+    font-family: YuMincho;
+    background: linear-gradient(0, gray, white);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* メニュー */
+#hamburger {
+    position: absolute;
+    top: 40px;
+    right: 20px;
+    width: 50px;
+    height: 35px;
+    cursor: pointer;
+    z-index: 200;
+    
+}
+
+.hamburger_line {
+    position: absolute;
+    width: 50px;
+    height: 3px;
+    right: 0;
+    background-color: white;
+    transition: all 0.5s;
+}
+
+#hamburger_line-1 {
+    top: 0px;
+}
+
+#hamburger_line-2 {
+    top: 15px;
+}
+
+#hamburger_line-3 {
+    top: 30px;
+}
+
+.open #hamburger_line-1 {
+    transform: rotate(-45deg);
+    top: 11px;
+}
+
+.open #hamburger_line-2 {
+    opacity: 0;
+}
+
+.open #hamburger_line-3 {
+    transform: rotate(45deg);
+    top: 11px;
+}
+
+#menu {
+    position: absolute;
+    right: -100%;
+    top: 100px;
+    width: fit-content;
+    height: 100%;
+    background-color: #fff;
+    transition: all 0.5s;
+    z-index: 100;
+}
+
+.open #menu {
+    right: 0;
+}
+
+hr{
+    width: 90%;
+    margin: 20px 0;
+}
+
+/* info */
+#info {
+    width: 100%;
+    display: flex;
+    padding: 10px;
+    align-items: center;
+    color: white;
+}
+
+#user_info {
+    display: flex;
+    flex-flow: column;
+}
+
+#user_info_top{
+    display: flex;
+    align-items: center;
+}
+
+#user_icon {
+    width: 25px;
+    height: 25px;
+}
+
+#member_info_top{
+    display: flex;
+    align-items: center;
+}
+
+#member_icon{
+    width: 25px;
+    height: 25px;
+}
+
+#setting_icon {
+    width: 15px;
+    height: 15px;
+    padding: auto;
+}
+
+#team {
+    margin-left: auto;
+    display: flex;
+    flex-flow: column;
+}
+
+#team_icon {
+    margin: auto;
+    width: 35px;
+    height: 35px;
+}
+
+/* canvas */
+canvas {
+    width: 60%;
+    background-color: gray;
+}
+
+/* ui */
+#ui {
+    width: 100%;
+    padding: 10px;
+}
+
+.btn {
+    padding: 5px;
+    transform: skew(-20deg);
+    color: white;
+    background-color: rgb(25 25 35);
+}
+
+.btn:hover {
+    background-color: rgb(50 50 60);
+}
+
+#message{
+    color: white;
+}

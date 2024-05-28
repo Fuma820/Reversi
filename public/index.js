@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // 認証状態が変更された時に実行
     firebase.auth().onAuthStateChanged((user) => {
         if (user) {// ログインしている場合はmain.htmlにリダイレクト
-            window.location.replace("mainPage/main.html");
+            window.location.replace("main_page/main.html");
         }
     });
     // ログインボタンが押された時実行
@@ -19,6 +19,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     // シングルプレイボタンが押された時実行
     document.getElementById("singlePlay_btn").onclick = () => {
-        window.location.replace("singlePlay.html");
+        window.location.replace("single_play/single_play.html");
     }
 });

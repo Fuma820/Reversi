@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Reversi</title>
+  <link rel="stylesheet" href="single_play.css">
+</head>
+
+<body>
+  <div id="header">
+    <img src="resorce/reversi.png" id="reversi_icon">
+    <h1 id="title">Reversi</h1>
+  </div>
+  <div id="info">
+    <div id="turn">
+      <div>あなたの色：<span id="player_color"></span></div>
+      <div>現在のターン：<span id="current_turn"></span></div>
+    </div>
+  </div>
+  <canvas width="3000" height="2598" onclick="onClick(event)"></canvas>
+
+  <script src="script/Drawer.js"></script>
+  <script src="script/RectDrawer.js"></script>
+  <script src="script/CircleDrawer.js"></script>
+  <script src="script/TriangleDrawer.js"></script>
+  <script src="script/Field.js"></script>
+  <script src="script/GameMaster.js"></script>
+  <script src="script/Player.js"></script>
+  <script src="script/HumanPlayer.js"></script>
+  <script src="script/CpuPlayer.js"></script>
+  <script src="script/UIManager.js"></script>
+  <script src="script//main.js"></script>
+  <div id="ui">
+    <button id="logout_btn" class="btn" onclick="retire()">戻る</button>
+  </div>
+  <div id="message"></div>
+</body>
+
+</html>
