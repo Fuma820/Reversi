@@ -11,7 +11,14 @@ header {
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: skyblue;
+    background-color: rgb(25 25 35);
+    color: white;
+}
+
+#reversi_icon {
+    width: 25px;
+    height: 25px;
+    padding: 5px;
 }
 
 .container {
@@ -29,4 +36,15 @@ header {
         box-shadow: none;
         border-top: 16px solid #ffa100;
     }
+}
+
+button{
+    display: flex;
+    align-items: center;
+}
+
+.btn_icon{
+    width: 20px;
+    height: 20px;
+    padding: 3px;
 }
