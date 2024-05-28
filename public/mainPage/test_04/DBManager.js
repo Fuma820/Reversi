@@ -6,6 +6,16 @@ class DBManager {
         this.db = db;
     }
 
+    async getUid(id) {
+        var result;
+        await db.collection("data").doc("users").get().then(async doc => {
+            if (id == 1) result = doc.data().uid1;
+            if (id == 2) result = doc.data().uid2;
+            if (id == 3) result = doc.data().uid3;
+        });
+        return result;
+    }
+
     /**
      * 引数のuidのユーザーidを取得するメソッド
      * @param {*} uid 
@@ -42,7 +52,7 @@ class DBManager {
             if (id == 1) { result = doc.data().status1 }
             else if (id == 2) { result = doc.data().status2 }
             else if (id == 3) { result = doc.data().status3 }
-        })
+        });
         return result;
     }
 
@@ -202,7 +212,7 @@ class DBManager {
      * 個別情報を保持するドキュメントが存在するか確認するメソッド
      * @returns 
      */
-    async existUserData() {
+    async existUserData(uid) {
         var result = false;
         await db.collection("users").doc(uid).get().then(doc => {
             if (doc.exists) result = true;

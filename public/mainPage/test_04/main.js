@@ -97,7 +97,7 @@ window.addEventListener("resize", () => { resolution = canvas.width / document.q
 firebase.auth().onAuthStateChanged(async user => {
     if (!user) window.location.replace("../index.html");
     uid = user.uid;
-    if (!await dbManager.existUserData()) await dbManager.createUserDoc(uid);
+    if (!await dbManager.existUserData(uid)) await dbManager.createUserDoc(uid);
     id = await dbManager.createID();
     if (!await dbManager.existPlayer(uid)) await timeOutAction();
     // UIを同期
@@ -105,8 +105,8 @@ firebase.auth().onAuthStateChanged(async user => {
     var color = id == 1 ? "赤" : id == 2 ? "青" : id == 3 ? "白" : "";
     await dbManager.update("uid" + id, uid);
     uiManager.setText("player_color", color);
-    if(gameMaster.getStatus() != 0) uiManager.setText("ready_btn", "");
-    if(gameMaster.getStatus() == 2) gameMaster.displayResult(id);
+    if (gameMaster.getStatus() != 0) uiManager.setText("ready_btn", "");
+    if (gameMaster.getStatus() == 2) gameMaster.displayResult(id);
 });
 
 // フィールド情報更新時実行
@@ -140,4 +140,13 @@ db.collection("data").doc("users").onSnapshot(async snapshot => {
         if (snapshot.data().uid2 == null && gameMaster.getPlayer(2).getType() == "human") gameMaster.release(2);
         if (snapshot.data().uid3 == null && gameMaster.getPlayer(3).getType() == "human") gameMaster.release(3);
     }
+});
+
+db.collection("users").onSnapshot(async () => {
+    var uid1 = await dbManager.getUid(1);
+    var uid2 = await dbManager.getUid(2);
+    var uid3 = await dbManager.getUid(3);
+    if (uid1 != null) uiManager.setText("user_name1", await dbManager.getUserName(uid1));
+    if (uid2 != null) uiManager.setText("user_name2", await dbManager.getUserName(uid2));
+    if (uid3 != null) uiManager.setText("user_name3", await dbManager.getUserName(uid3));
 });
