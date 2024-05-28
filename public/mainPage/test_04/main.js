@@ -20,13 +20,17 @@ const dbManager = new DBManager(db);
 const field = new Field(canvas);
 const gameMaster = new GameMaster(field, dbManager, uiManager);
 
-// データベースのプレイヤー情報をリセットする関数
+/**
+ * データベースのプレイヤー情報をリセットする関数
+ */
 async function resetPlayersData() {
     await dbManager.resetUsers();
     await gameMaster.init();
 }
 
-// 盤面の情報を更新する関数
+/**
+ * 盤面の情報を更新する関数
+ */
 async function fieldUpdate() {
     await dbManager.syncWith(gameMaster);
     if (gameMaster.getStatus() == 2) gameMaster.displayResult(id);// 試合が終了していれば，試合結果を表示
@@ -37,14 +41,18 @@ async function fieldUpdate() {
     if (gameMaster.getCurrentStone() == 3) uiManager.setText("current_turn", "白");
 }
 
-// タイムアウト処理関数
+/**
+ * タイムアウト処理関数
+ */
 async function timeOutAction() {
     await dbManager.syncWith(gameMaster);
     if (await dbManager.checkTimeOut(limitTime)) await resetPlayersData();
     else if (gameMaster.getStatus() != 0) await dbManager.logout();// 他の人が試合中ならログアウト
 }
 
-// 試合をリタイア(終了)する関数
+/**
+ * 試合をリタイア(終了)する関数
+ */
 async function retire() {
     if (await dbManager.getPlayerNum() == 1) {
         // プレイヤーが一人しか参加していないならusersを初期化する
@@ -94,7 +102,7 @@ firebase.auth().onAuthStateChanged(async user => {
     if (!await dbManager.existPlayer(uid)) await timeOutAction();
     // UIを同期
     if (dbManager.getStatus(id) == 1) uiManager.disableBtn("ready_btn");
-    var color = id == 1 ? id == 2 ? id == 3 ? "赤" : "青" : "白" : "";
+    var color = id == 1 ? "赤" : id == 2 ? "青" : id == 3 ? "白" : "";
     await dbManager.update("uid" + id, uid);
     uiManager.setText("player_color", color);
 });
