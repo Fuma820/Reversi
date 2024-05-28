@@ -101,10 +101,12 @@ firebase.auth().onAuthStateChanged(async user => {
     id = await dbManager.createID();
     if (!await dbManager.existPlayer(uid)) await timeOutAction();
     // UIを同期
-    if (dbManager.getStatus(id) == 1) uiManager.disableBtn("ready_btn");
+    if (dbManager.getStatus(id) != 0) uiManager.disableBtn("ready_btn");
     var color = id == 1 ? "赤" : id == 2 ? "青" : id == 3 ? "白" : "";
     await dbManager.update("uid" + id, uid);
     uiManager.setText("player_color", color);
+    if(gameMaster.getStatus() != 0) uiManager.setText("ready_btn", "");
+    if(gameMaster.getStatus() == 2) gameMaster.displayResult(id);
 });
 
 // フィールド情報更新時実行
