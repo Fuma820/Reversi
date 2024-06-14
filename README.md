@@ -9,7 +9,7 @@ https://test-b1eea.firebaseapp.com
 
 ## ルール
 
-3人用リバーシのルールページ：https://fuma820.github.io/Reversi_rule/
+3人用リバーシのルール：https://fuma820.github.io/Reversi_rule/
 
 ### 参考
 
