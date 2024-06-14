@@ -11,7 +11,7 @@ https://test-b1eea.firebaseapp.com
 
 3人用リバーシのルール：https://fuma820.github.io/Reversi_rule/
 
-### 参考
+### 類似ゲーム
 
 - RIVER SEA GROUND
 
