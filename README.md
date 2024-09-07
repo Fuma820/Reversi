@@ -1,7 +1,7 @@
 # 3人用リバーシ
 
 ![](./resource/patern_03.png)
-https://test-b1eea.firebaseapp.com
+<https://test-b1eea.firebaseapp.com>
 
 ## 概要
 
@@ -9,7 +9,7 @@ https://test-b1eea.firebaseapp.com
 
 ## ルール
 
-3人用リバーシのルール：https://fuma820.github.io/Reversi_rule/
+3人用リバーシのルール：<https://fuma820.github.io/Reversi_rule/>
 
 ## 使用技術
 

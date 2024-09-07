@@ -38,12 +38,12 @@ header {
     }
 }
 
-button{
+button {
     display: flex;
     align-items: center;
 }
 
-.btn_icon{
+.btn_icon {
     width: 20px;
     height: 20px;
     padding: 3px;
