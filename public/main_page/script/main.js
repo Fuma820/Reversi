@@ -128,7 +128,7 @@ async function onClick(e) {
 
     if (!gameMaster.canSelect(x, y, id)) return;
     gameMaster.action(x, y);
-    dbManager.timeStamp(uid);
+    dbManager.saveTimeStamp(uid);
 }
 
 /**
