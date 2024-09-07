@@ -114,6 +114,22 @@ db.collection("data").doc("users").onSnapshot(async snapshot => {
 });
 
 /**
+ * フィールドクリック時実行関数
+ */
+async function onClick(e) {
+    await dbManager.checkLogin(uid);
+    if (gameMaster.gameStatus == GAME_READY) return false;
+
+    const rect = e.target.getBoundingClientRect();
+    const x = Math.floor((e.clientX - rect.left) * resolution);
+    const y = Math.floor((e.clientY - rect.top) * resolution);
+
+    if (!gameMaster.canSelect(x, y, id)) return;
+    gameMaster.action(x, y);
+    dbManager.timeStamp(uid);
+}
+
+/**
  * 盤面の情報を更新する関数
  */
 async function fieldUpdate() {
@@ -187,21 +203,6 @@ async function ready() {
     } catch (error) {
         console.error("準備完了処理中にエラーが発生しました:", error);
     }
-}
-
-/**
- * フィールドクリック時実行関数
- */
-async function onClick(e) {
-    await dbManager.checkLogin(uid);
-    if (gameMaster.gameStatus == GAME_READY) return false;
-
-    const rect = e.target.getBoundingClientRect();
-    const x = Math.floor((e.clientX - rect.left) * resolution);
-    const y = Math.floor((e.clientY - rect.top) * resolution);
-
-    if (!gameMaster.canSelect(x, y, id)) return;
-    gameMaster.action(x, y);
 }
 
 /**

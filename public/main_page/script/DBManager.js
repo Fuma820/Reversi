@@ -2,7 +2,7 @@
  * データベースの更新，値の取得などを行うクラス
  */
 class DBManager {
-   constructor(db) {
+    constructor(db) {
         this.db = db;
     }
 
@@ -139,8 +139,7 @@ class DBManager {
                 y: selectedY,
                 stone: currentStone,
                 gameStatus: gameStatus,
-                fieldList: JSON.stringify(field.fieldList),
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                fieldList: JSON.stringify(field.fieldList)
             });
         } catch (error) {
             console.error("Error setting data:", error);
@@ -330,6 +329,22 @@ class DBManager {
             await this.db.collection("data").doc("users").update(updateData);
         } catch (error) {
             console.error("Error deleting user:", error);
+        }
+    }
+
+    /**
+     * ユーザーIDとクリックした日時をFirestoreに保存するメソッド
+     * @param {string} uid ユーザーのID
+     */
+    async saveTimeStamp(uid) {
+        try {
+            await this.db.collection("data").doc("field").update({
+                uid: uid,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            console.log('タイムスタンプが正常に保存されました。');
+        } catch (error) {
+            console.error('タイムスタンプの保存中にエラーが発生しました:', error);
         }
     }
 
