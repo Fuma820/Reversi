@@ -1,5 +1,5 @@
 /**
- * 試合進行を行うクラス
+ * 試合進行を行うクラス．
  */
 class GameMaster {
     constructor(field, dbManager, uiManager) {
@@ -14,10 +14,11 @@ class GameMaster {
         this.dbManager = dbManager;
         this.uiManager = uiManager;
     }
+    
     /**
-     * 引数のIDのプレイヤーを返すメソッド
-     * @param {*} id 
-     * @returns 
+     * 引数のIDのプレイヤーを返すメソッド．
+     * @param {number} id ゲームで使用するID
+     * @returns {Player} 引数のIDを持つプレイヤー
      */
     getPlayer(id) {
         return this.playerList[id - 1];
@@ -25,19 +26,19 @@ class GameMaster {
 
     /**
      * プレイヤーの人数を返すメソッド．
-     * @returns 
+     * @returns 参加しているプレイヤーの人数．
      */
     getPlayerNum() {
         return this.playerList.length;
     }
 
     /**
-     * 複数データのセッター
-     * @param {*} currentStone 
-     * @param {*} selectedX 
-     * @param {*} selectedY 
-     * @param {*} gameStatus 
-     * @param {*} fieldList 
+     * 複数データのセッター．
+     * @param {number} currentStone 石の色
+     * @param {number} selectedX 選択されたx座標
+     * @param {number} selectedY 選択されたy座標
+     * @param {number} gameStatus ゲームの状態
+     * @param {number[][]} fieldList フィールドの情報を保持するリスト
      */
     setData(currentStone, selectedX, selectedY, gameStatus, fieldList) {
         this.currentStone = currentStone;
@@ -48,6 +49,9 @@ class GameMaster {
         this.field.draw(this.currentStone, this.selectedX, this.selectedY);
     }
 
+    /**
+     * ゲームの進行メソッド．
+     */
     async progress() {
         if (this.gameStatus != 1) return;
 
@@ -67,7 +71,7 @@ class GameMaster {
 
     /**
      * プレイヤーの登録を行うメソッド
-     * @param {*} player 
+     * @param {Player} player 登録するプレイヤー
      */
     async register(player) {
         this.playerList.push(player);
@@ -82,8 +86,8 @@ class GameMaster {
     }
 
     /**
-     * プレイヤーの登録解除を行うメソッド
-     * @param {*} id 
+     * プレイヤーの登録解除を行うメソッド．
+     * @param {number} id 登録解除するプレイヤーのゲーム内ID
      */
     release(id) {
         this.playerList[id - 1] = new CpuPlayer(id, gameMaster);
@@ -94,8 +98,8 @@ class GameMaster {
 
     /**
       * ゲームマスターの行動を表すメソッド
-      * @param {*} clientX 
-      * @param {*} clientY 
+      * @param {*} clientX クリックされたx座標
+      * @param {*} clientY クリックされたy座標
       */
     action(clientX, clientY) {
         if (this.playerList[this.currentStone - 1].type == "human") {
@@ -105,7 +109,7 @@ class GameMaster {
     }
 
     /**
-     * ゲーム結果を表示する
+     * ゲーム結果を表示するメソッド．
      * @param {number} id プレイヤーID
      */
     displayResult(id) {
@@ -123,7 +127,7 @@ class GameMaster {
     }
 
     /**
-     * プレイヤーの順位を計算
+     * プレイヤーの順位を計算するメソッド．
      * @param {number} id プレイヤーID
      * @param {Array} pointList ポイントリスト
      * @returns {number} 順位
@@ -134,7 +138,7 @@ class GameMaster {
     }
 
     /**
-     * ターンを変更する
+     * ターンを変更するメソッド．
      */
     async changeTurn() {
         this.currentStone = this.currentStone % MAX_PLAYER_NUM + 1;
@@ -143,7 +147,7 @@ class GameMaster {
     }
 
     /**
-     * ターンをスキップするメソッド
+     * ターンをスキップするメソッド．
      */
     skipTurn() {
         this.skipNum++;
@@ -155,7 +159,7 @@ class GameMaster {
     }
 
     /**
-     * 指定されたマスを選択できるか判定するメソッド
+     * 指定されたマスを選択できるか判定するメソッド．
      * @param {number} clientX クリックされた位置のX座標
      * @param {number} clientY クリックされた位置のY座標
      * @param {number} id プレイヤーID
@@ -169,12 +173,11 @@ class GameMaster {
     }
 
     /**
-    * 指定されたマスに石を置くメソッド
+    * 指定されたマスに石を置くメソッド．
     * @param {number} clientX クリックされた位置のX座標
     * @param {number} clientY クリックされた位置のY座標
     */
     putStone(clientX, clientY) {
-        // クリックされたマスの座標を取得
         const [x, y] = this.field.getPosition(clientX, clientY);
         this.selectedX = x;
         this.selectedY = y;
@@ -184,7 +187,7 @@ class GameMaster {
     }
 
     /**
-     * ランダムで石を置くメソッド
+     * ランダムで石を置くメソッド．
      */
     autoPut() {
         const nextList = this.field.nextList;
@@ -197,7 +200,7 @@ class GameMaster {
     }
 
     /**
-     * 全方向の石をひっくり返す
+     * 全方向の石をひっくり返すメソッド．
      */
     reverseStonesInAllDirections() {
         for (let i = 0; i < DIRECTION_NUM; i++) {
@@ -211,7 +214,7 @@ class GameMaster {
     }
 
     /**
-     * フィールドを初期化メソッド
+     * フィールドを初期化メソッド．
      */
     async init() {
         this.currentStone = 1;
@@ -226,7 +229,7 @@ class GameMaster {
     }
 
     /**
-     * スタートメソッド
+     * スタートメソッド．
      */
     async start() {
         this.init();

@@ -1,5 +1,5 @@
 /**
- * 盤面を表すクラス
+ * 盤面を表すクラス．
  */
 class Field {
     static ROW = 8;
@@ -17,9 +17,9 @@ class Field {
         this.context = canvas.getContext("2d");
         this.size = canvas.width / 2;// 盤面の大きさ(6角形の1辺の長さ)
         this.triangleSize = this.size / 4;// マスの大きさ(一辺の長さ)
-        this.cellSize = this.triangleSize * Math.sin(Math.PI / 3) * (2 / 3);// 各頂点から外心までの距離(正三角形なので外心＝重心)
+        this.cellSize = this.triangleSize * Math.sin(Math.PI / 3) * (2 / 3);// 外心から各頂点までの距離
         this.fieldList = Array.from(new Array(Field.COLUMN), () => new Array(Field.ROW).fill(0));
-        this.nextList = Array.from(new Array());
+        this.nextList = Array.from(new Array());// 次に置けるマスのリスト
         this.rectDrawer = new RectDrawer(this.context);
         this.circleDrawer = new CircleDrawer(this.context);
         this.triangleDrawer = new TriangleDrawer(this.context, this.cellSize);
@@ -27,14 +27,24 @@ class Field {
     }
 
     /**
-     * マスの石の情報を返す
+     * マスの石の情報を返すメソッド．
+     * @param {number} x x座標
+     * @param {number} y y座標
+     * @returns {number} 石の情報
      */
     getStone(x, y) {
         return this.isOnField(x, y) ? this.fieldList[x][y] : -1;
     }
 
     /**
-     * 指定方向にひっくり返せる石の数を取得する
+     * 指定方向にひっくり返せる石の数を取得するメソッド．
+     * 引数の方向に自分以外の色があれば再帰処理を行う．
+     * @param {number} stone 石の色
+     * @param {number} x x座標
+     * @param {number} y y座標
+     * @param {number} direction 確認する方向
+     * @param {number} count ひっくり返せる可能性のある石の数
+     * @returns {number} ひっくり返せる石の数
      */
     getReversibleNum(stone, x, y, direction, count = 0) {
         const nextX = x + Field.dx[direction];
@@ -46,7 +56,10 @@ class Field {
     }
 
     /**
-     * クリックされた座標からマスの位置を取得する
+     * クリックされた座標からマスの位置を取得するメソッド．
+     * @param {number} clientX クリックされたx座標
+     * @param {number} clientY クリックされたy座標
+     * @returns {number[]} マスの位置
      */
     getPosition(clientX, clientY) {
         const y = Math.floor(clientY / (this.cellSize * 3 / 2));
@@ -57,12 +70,12 @@ class Field {
     /**
      * マスの位置を調整するメソッド．
      * 変数x,yが表す三角形の頂点を原点として，
-     * 相対的な座標でクリックしたマスのx座標がxかx＋１か判定する
-     * @param {*} x 
-     * @param {*} y 
-     * @param {*} clientX 
-     * @param {*} clientY 
-     * @returns 
+     * 相対的な座標でクリックしたマスのx座標がxかx＋１か判定する．
+     * @param {number} x クリックされたx座標より小さい最大のx座標を持つマスのx座標
+     * @param {number} y クリックされたy座標より小さい最大のy座標を持つマスのy座標
+     * @param {number} clientX クリックされたx座標
+     * @param {number} clientY クリックされたy座標
+     * @returns {number[]} マスの位置
      */
     adjustPosition(x, y, clientX, clientY) {
         if ((x + y) % 2 === 0) {// 上向き三角形の場合（xが偶数番目のマス）
@@ -83,11 +96,10 @@ class Field {
 
     /**
      * 引数の石をfieldListに格納するメソッド．
-     * 引数で示す座標が盤面の外の場合は格納せず，-1を返す．
-     * @param {*} x 
-     * @param {*} y 
-     * @param {*} stone 
-     * @returns 
+     * @param {number} x x座標
+     * @param {number} y y座標
+     * @param {number} stone 石の色
+     * @returns {number} 引数で示す座標が盤面の外の場合は格納せず，-1を返す．
      */
     setStone(x, y, stone) {
         if (!this.isOnField(x, y)) return -1;
@@ -95,42 +107,11 @@ class Field {
     }
 
     /**
-     * 引数のマスが盤面上であるか判定するメソッド
-     * @param {*} x 
-     * @param {*} y 
-     * @returns 
-     */
-    isOnField(x, y) {
-        /*
-         * size / triangleSize = 4[マス]
-         * よって
-         * ・y=-x+4
-         * ・y=x-12
-         * ・y=x+4
-         * ・y=-x+20
-         * ・y=0
-         * ・y=8
-         * 上記の6直線に囲まれた六角形について考える
-         */
-        const s = this.size / this.triangleSize;
-
-        if (s <= x + y
-            && x - y <= s * 3
-            && y - x < s
-            && x + y < s * 5
-            && 0 <= y
-            && y < s * 2) {
-            return true;
-        }
-        return false
-    }
-
-    /**
-     * 引数の内容で石を置けるか判定するメソッド
-     * @param {*} stone 
-     * @param {*} x 
-     * @param {*} y 
-     * @returns 
+     * 石を置けるか判定するメソッド．
+     * @param {number} stone 石の色
+     * @param {number} x x座標
+     * @param {number} y y座標
+     * @returns {boolean} 石を置けるかどうか
      */
     canPut(stone, x, y) {
         if (!this.isOnField(x, y) || this.getStone(x, y) > 0) {
@@ -146,12 +127,40 @@ class Field {
     }
 
     /**
-     * 石を返すメソッド
-     * @param {*} stone 
-     * @param {*} x 
-     * @param {*} y 
-     * @param {*} direction 
-     * @returns 
+     * 引数のマスが盤面上であるか判定するメソッド．
+     * size / triangleSize = 4[マス]
+     * よって
+     * ・y=-x+4
+     * ・y=x-12
+     * ・y=x+4
+     * ・y=-x+20
+     * ・y=0
+     * ・y=8
+     * 上記の6直線に囲まれた六角形について考える．
+     * @param {number} x x座標
+     * @param {number} y y座標
+     * @returns {boolean} 引数のマスが盤面上であるかどうか
+     */
+    isOnField(x, y) {
+        const s = this.size / this.triangleSize;
+
+        if (s <= x + y
+            && x - y <= s * 3
+            && y - x < s
+            && x + y < s * 5
+            && 0 <= y
+            && y < s * 2) {
+            return true;
+        }
+        return false
+    }
+
+    /**
+     * 石を返すメソッド．
+     * @param {number} stone 石の色
+     * @param {number} x x座標
+     * @param {number} y y座標
+     * @param {number} direction ひっくり返す方向
      */
     reverse(stone, x, y, direction) {
         if (this.getStone(x + Field.dx[direction], y + Field.dy[direction]) == stone) return;
@@ -160,10 +169,10 @@ class Field {
     }
 
     /**
-     * 盤面を描画するメソッド
-     * @param {*} currentStone 
-     * @param {*} selectedX 
-     * @param {*} selectedY 
+     * 盤面を描画するメソッド．
+     * @param {number} currentStone 現在のターンの石の色
+     * @param {number} selectedX 最後に選択されたx座標
+     * @param {number} selectedY 最後に選択されたy座標
      */
     draw(currentStone, selectedX, selectedY) {
         const UPWARD = 0;
@@ -194,7 +203,13 @@ class Field {
     }
 
     /**
-     * マスの色を取得する
+     * マスの色を取得するメソッド．
+     * @param {number} currentStone 現在のターンの石の色
+     * @param {number} x 色を取得するマスのx座標
+     * @param {number} y 色を取得するマスのy座標
+     * @param {number} selectedX 最後に選択されたx座標
+     * @param {number} selectedY 最後に選択されたy座標
+     * @returns {number} マスの色
      */
     getCellColor(currentStone, x, y, selectedX, selectedY) {
         if (this.canPut(currentStone, x, y)) {
@@ -205,7 +220,8 @@ class Field {
     }
 
     /**
-     * 盤面の得点リストを作成する
+     * 盤面の得点リストを作成するメソッド．
+     * @returns {number[]} ポイントのリスト
      */
     createPointList() {
         // 各プレイヤーの得点を保持するリスト
@@ -222,7 +238,7 @@ class Field {
     }
 
     /**
-     * フィールドの情報をリセットするメソッド
+     * フィールドの情報をリセットするメソッド．
      */
     reset() {
         this.fieldList = Array.from(new Array(Field.COLUMN), () => new Array(Field.ROW).fill(0));

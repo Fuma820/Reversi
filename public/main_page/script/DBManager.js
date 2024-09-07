@@ -1,5 +1,5 @@
 /**
- * データベースの更新，値の取得などを行うクラス
+ * データベースの更新や値の取得を行うクラス．
  */
 class DBManager {
     constructor(db) {
@@ -7,8 +7,8 @@ class DBManager {
     }
 
     /**
-     * idに基づきユーザーのuidを取得するメソッド
-     * @param {number} id  ユーザーのID (1, 2, 3)
+     * 指定したIDに基づきユーザーのUIDを取得する
+     * @param {number} id ユーザーのID (1, 2, 3)
      * @returns {Promise<string | undefined>}
      */
     async getUid(id) {
@@ -21,8 +21,8 @@ class DBManager {
     }
 
     /**
-     * uidに基づきユーザー名を取得するメソッド
-     * @param {string} uid 
+     * UIDに基づきユーザー名を取得するメソッド．
+     * @param {string} uid ユーザーのUID
      * @returns {Promise<string>}
      */
     async getUserName(uid) {
@@ -36,7 +36,7 @@ class DBManager {
     }
 
     /**
-     * ゲームの状態を取得するメソッド
+     * ゲームの状態を取得するメソッド．
      * @returns {Promise<any>}
      */
     async getGameStatus() {
@@ -49,8 +49,8 @@ class DBManager {
     }
 
     /**
-     * idに基づき準備状況を取得するメソッド
-     * @param {number} id 
+     * 指定したIDに基づき準備状況を取得するメソッド．
+     * @param {number} id ユーザーのID
      * @returns {Promise<number | undefined>}
      */
     async getStatus(id) {
@@ -63,7 +63,7 @@ class DBManager {
     }
 
     /**
-     * 参加プレイヤー数を取得するメソッド
+     * 参加プレイヤー数を取得するメソッド．
      * @returns {Promise<number>}
      */
     async getPlayerNum() {
@@ -85,7 +85,7 @@ class DBManager {
     }
 
     /**
-     * 準備完了したプレイヤー数を取得するメソッド
+     * 準備完了したプレイヤー数を取得するメソッド．
      * @returns {Promise<number>}
      */
     async getReadyNum() {
@@ -107,7 +107,7 @@ class DBManager {
     }
 
     /**
-     * ゲームの参加ユーザー情報を初期化するメソッド
+     * ゲームの参加ユーザー情報を初期化するメソッド．
      */
     async resetUsers() {
         try {
@@ -125,12 +125,12 @@ class DBManager {
     }
 
     /**
-     * 盤面データを更新するメソッド
-     * @param {number} selectedX 
-     * @param {number} selectedY 
-     * @param {number} currentStone 
-     * @param {string} gameStatus 
-     * @param {object} field 
+     * 盤面データを更新するメソッド．
+     * @param {number} selectedX X座標
+     * @param {number} selectedY Y座標
+     * @param {number} currentStone 現在の石
+     * @param {string} gameStatus ゲームの状態
+     * @param {object} field フィールドデータ
      */
     async setData(selectedX, selectedY, currentStone, gameStatus, field) {
         try {
@@ -147,9 +147,9 @@ class DBManager {
     }
 
     /**
-     * 任意のプロパティの値を更新するメソッド
-     * @param {string} property 
-     * @param {*} value 
+     * 任意のプロパティの値を更新するメソッド．
+     * @param {string} property 更新するプロパティ名
+     * @param {*} value プロパティの値
      */
     async update(property, value) {
         try {
@@ -192,7 +192,8 @@ class DBManager {
     }
 
     /**
-     * ログインしているか確認するメソッド
+     * ログイン状態を確認するメソッド．
+     * @param {string} uid ユーザーのUID
      */
     async checkLogin(uid) {
         try {
@@ -207,7 +208,7 @@ class DBManager {
                 }
             }
 
-            // uid が存在しない場合はログアウト
+            // UIDが見つからない場合はログアウト
             if (!isLoggedIn) {
                 await this.logout();
             }
@@ -217,9 +218,9 @@ class DBManager {
     }
 
     /**
-     * タイムアウトしているか確認するメソッド
-     * @param {number} limitTime タイムアウト判定の制限時間 (ms)
-     * @returns {Promise<boolean>} タイムアウトしているかどうか
+     * タイムアウトを確認するメソッド．
+     * @param {number} limitTime タイムアウト制限時間 (ミリ秒)
+     * @returns {Promise<boolean>} タイムアウトしているか
      */
     async checkTimeOut(limitTime) {
         try {
@@ -239,8 +240,7 @@ class DBManager {
     }
 
     /**
-     * ゲームで使用するIDを生成するメソッド
-     * エラーが発生した場合は0を返す
+     * ゲームで使用するIDを生成するメソッド．
      * @param {string} uid ユーザーのUID
      * @returns {Promise<number>} ゲームのID (1, 2, 3)
      */
@@ -249,14 +249,14 @@ class DBManager {
             const doc = await this.db.collection("data").doc("users").get();
             const data = doc.data();
 
-            // 既存のuidがある場合のチェック
+            // 既存UIDがあればそのIDを返す
             for (let i = 1; i <= MAX_PLAYER_NUM; i++) {
                 if (data[`uid${i}`] === uid) {
                     return i;
                 }
             }
 
-            // 空いているスロットを探してIDを返す
+            // 空きスロットがあればIDを返す
             for (let i = 1; i <= MAX_PLAYER_NUM; i++) {
                 if (data[`uid${i}`] == null) {
                     return i;
@@ -270,8 +270,8 @@ class DBManager {
     }
 
     /**
-     * 個別情報を保持するドキュメントを作成するメソッド
-     * @param {string} uid 作成するユーザーのUID
+     * 個別ユーザー情報をFirestoreに保存するメソッド．
+     * @param {string} uid ユーザーのUID
      */
     async createUserDoc(uid) {
         try {
@@ -297,9 +297,9 @@ class DBManager {
     }
 
     /**
-     * 引数のuidがゲームに参加しているか確認するメソッド
+     * ユーザーデータの存在を確認するメソッド．
      * @param {string} uid 確認するUID
-     * @returns {Promise<boolean>} 参加しているかどうか
+     * @returns {Promise<boolean>} ユーザーデータが存在するか
      */
     async existPlayer(uid) {
         try {
@@ -333,7 +333,7 @@ class DBManager {
     }
 
     /**
-     * ユーザーIDとクリックした日時をFirestoreに保存するメソッド
+     * ユーザーIDとクリックした日時をFirestoreに保存するメソッド．
      * @param {string} uid ユーザーのID
      */
     async saveTimeStamp(uid) {

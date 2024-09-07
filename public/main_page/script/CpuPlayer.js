@@ -1,5 +1,5 @@
 /**
- * CPUプレイヤークラス
+ * CPUプレイヤークラス．
  */
 class CpuPlayer extends Player {
     constructor(id, gameMaster) {

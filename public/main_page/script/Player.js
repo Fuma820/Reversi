@@ -1,5 +1,5 @@
 /**
- * プレイヤークラス
+ * プレイヤークラス．
  */
 class Player {
     constructor(id, gameMaster) {

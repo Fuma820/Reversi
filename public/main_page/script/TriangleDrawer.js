@@ -1,5 +1,5 @@
 /**
- * 三角形を描画するクラス
+ * 三角形を描画するクラス．
  */
 class TriangleDrawer extends Drawer {
     constructor(context, cellSize) {
@@ -10,7 +10,7 @@ class TriangleDrawer extends Drawer {
     }
 
     /**
-     * 三角形を描画するメソッド
+     * 三角形を描画するメソッド．
      * @param {string} color 三角形の色
      * @param {number} x 描画するx座標
      * @param {number} y 描画するy座標
@@ -59,6 +59,7 @@ class TriangleDrawer extends Drawer {
             2: 0,            // 右向き
             3: Math.PI       // 左向き
         };
-        return directionMap[direction] || 0;// デフォルトは0（右向き）
+        return directionMap[direction] || 0;// デフォルトは0
     }
+
 }

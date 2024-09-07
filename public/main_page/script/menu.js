@@ -1,10 +1,10 @@
 /**
- * メニューをスライドする関数
+ * メニューをスライドする関数．
  */
 function menuActive() { document.getElementById("menu-wrapper").classList.toggle("open"); }
 
 /**
- * ユーザー名を更新する関数
+ * ユーザー名を更新する関数．
  */
 function updateName() {
     db.collection("users").doc(uid).update({

@@ -14,8 +14,8 @@ const GAME_PLAYING = 1;
 const GAME_FINISHED = 2;
 
 const MAX_PLAYER_NUM = 3;
-const DIRECTION_NUM = 6; // 三角形のマスなので6方向を確認
-const LIMIT_TIME = 10 * 60 * 1000; // タイムアウト時間（10分）
+const DIRECTION_NUM = 6;// 三角形のマスなので6方向を確認
+const LIMIT_TIME = 10 * 60 * 1000;// タイムアウト時間（10分）
 
 let db = firebase.firestore(firebase.initializeApp(firebaseConfig));
 let uid = null;// ユーザーのログイン状態を管理するためのID
@@ -43,6 +43,7 @@ window.addEventListener("resize", () => {
 
 // フィールド情報更新時実行
 db.collection("data").doc("field").onSnapshot(()=>fieldUpdate());
+
 // ユーザー名変更時実行
 db.collection("users").onSnapshot(()=>updatePlayerNames());
 
@@ -114,11 +115,12 @@ db.collection("data").doc("users").onSnapshot(async snapshot => {
 });
 
 /**
- * フィールドクリック時実行関数
+ * フィールドクリック時実行関数．
+ * @param {*} e イベント
  */
 async function onClick(e) {
     await dbManager.checkLogin(uid);
-    if (gameMaster.gameStatus == GAME_READY) return false;
+    if (gameMaster.gameStatus == GAME_READY) return;
 
     const rect = e.target.getBoundingClientRect();
     const x = Math.floor((e.clientX - rect.left) * resolution);
@@ -130,7 +132,7 @@ async function onClick(e) {
 }
 
 /**
- * 盤面の情報を更新する関数
+ * 盤面の情報を更新する関数．
  */
 async function fieldUpdate() {
     try {
@@ -155,7 +157,7 @@ async function fieldUpdate() {
 }
 
 /**
- * タイムアウト処理関数
+ * タイムアウト処理関数．
  */
 async function timeOutAction() {
     await dbManager.syncWith(gameMaster);
@@ -168,7 +170,7 @@ async function timeOutAction() {
 }
 
 /**
- * データベースのプレイヤー情報をリセットする関数
+ * データベースのプレイヤー情報をリセットする関数．
  */
 async function resetPlayersData() {
     await dbManager.resetUsers();
@@ -189,7 +191,7 @@ async function retire() {
 }
 
 /**
- * 準備完了関数
+ * 準備完了関数．
  */
 async function ready() {
     try {
@@ -206,7 +208,7 @@ async function ready() {
 }
 
 /**
- * プレイヤーのUIDを取得してUIを更新する関数
+ * プレイヤーのUIDを取得してUIを更新する関数．
  */
 async function updatePlayerNames() {
     try {
@@ -225,7 +227,7 @@ async function updatePlayerNames() {
 }
 
 /**
- * プレイヤーの登録処理を行う関数
+ * プレイヤーの登録処理を行う関数．
  */
 async function registerPlayers(userIds) {
     const registerPlayer = (uid, playerId) => {
@@ -240,7 +242,7 @@ async function registerPlayers(userIds) {
 }
 
 /**
- * ログアウトしたプレイヤーをCPUに切り替える関数
+ * ログアウトしたプレイヤーをCPUに切り替える関数．
  */
 async function replaceLoggedOutPlayers(userIds) {
     const releasePlayerIfLoggedOut = (uid, playerId) => {
