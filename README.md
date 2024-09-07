@@ -1,6 +1,6 @@
 # 3人用リバーシ
 
-![](./resource/patern_03.png)
+![game_image](./resource/patern_03.png)
 <https://test-b1eea.firebaseapp.com>
 
 ## 概要
