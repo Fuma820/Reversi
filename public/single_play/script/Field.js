@@ -1,218 +1,246 @@
 /**
- * 盤面を表すクラス
+ * 盤面を表すクラス．
  */
 class Field {
+    static ROW = 8;
+    static COLUMN = 16;
+    static COLORS = { 1: "red", 2: "blue", 3: "white" };
+    static BG_COLOR = "rgba(0, 0, 0, 0)";
+    static NORMAL_CELL_COLOR = "green";
+    static PLACEABLE_CELL_COLOR = "lime";
+    static SELECTED_CELL_COLOR = "yellow";
+    // 周囲のマスを表す配列(例：dx[0], dy[0]は右上のマスを表す)
+    static dx = [1, 2, 1, -1, -2, -1];
+    static dy = [-1, 0, 1, 1, 0, -1];
+
     constructor(canvas, dataBaseManager) {
         this.context = canvas.getContext("2d");
-        this.size = canvas.width / 2;//盤面の大きさ(6角形の1辺の長さ)
-        this.tSize = this.size / 4;// マスの大きさ(一辺の長さ)
-        this.cellSize = this.tSize * Math.sin(Math.PI / 3) * (2 / 3);//各頂点から外心までの距離(正三角形なので外心＝重心)
-        this.row = 8;
-        this.column = 16;;
-        this.fieldList = Array.from(new Array(this.column), () => new Array(this.row).fill(0));
-        this.nextList = Array.from(new Array());// 次に石を置けるマスのリスト
-        // 周囲のマスを表す配列(例：dx[0], dy[0]は右上のマスを表す)
-        this.dx = [1, 2, 1, -1, -2, -1];
-        this.dy = [-1, 0, 1, 1, 0, -1];
-        // 色の設定
-        this.COLOR_1 = "red";
-        this.COLOR_2 = "blue";
-        this.COLOR_3 = "white";
-        this.BG_COLOR = "rgba(" + [0, 0, 0, 0] + ")";
-        this.NORMAL_CELL_COLOR = "green";
-        this.PLACEABLE_CELL_COLOR = "lime";
-        this.SELECTED_CELL_COLOR = "yellow";
+        this.size = canvas.width / 2;// 盤面の大きさ(6角形の1辺の長さ)
+        this.triangleSize = this.size / 4;// マスの大きさ(一辺の長さ)
+        this.cellSize = this.triangleSize * Math.sin(Math.PI / 3) * (2 / 3);// 外心から各頂点までの距離
+        this.fieldList = Array.from(new Array(Field.COLUMN), () => new Array(Field.ROW).fill(0));
+        this.nextList = Array.from(new Array());// 次に置けるマスのリスト
         this.rectDrawer = new RectDrawer(this.context);
         this.circleDrawer = new CircleDrawer(this.context);
         this.triangleDrawer = new TriangleDrawer(this.context, this.cellSize);
-        this.dataBaseManager = dataBaseManager;
     }
 
-    // ゲッター
-    getFieldList() { return this.fieldList; }
-    getNextList() { return this.nextList; }
-
     /**
-     * 引数のマスの石の情報を返すメソッド
+     * マスの石の情報を返すメソッド．
+     * @param {number} x x座標
+     * @param {number} y y座標
+     * @returns {number} 石の情報
      */
     getStone(x, y) {
-        if (!this.checkOnField(x, y)) return -1;
-        return this.fieldList[x][y];
+        return this.isOnField(x, y) ? this.fieldList[x][y] : -1;
     }
 
     /**
-     * 引数の方向にひっくり返せる数を取得するメソッド
-     * @param {*} stone 
-     * @param {*} x 
-     * @param {*} y 
-     * @param {*} direction 
-     * @param {*} n 
-     * @returns 
+     * 指定方向にひっくり返せる石の数を取得するメソッド．
+     * 引数の方向に自分以外の色があれば再帰処理を行う．
+     * @param {number} stone 石の色
+     * @param {number} x x座標
+     * @param {number} y y座標
+     * @param {number} direction 確認する方向
+     * @param {number} count ひっくり返せる可能性のある石の数
+     * @returns {number} ひっくり返せる石の数
      */
-    getReversibleNum(stone, x, y, direction, n) {
-        if (this.getStone(x + this.dx[direction], y + this.dy[direction]) < 1) return 0;
-        if (this.getStone(x + this.dx[direction], y + this.dy[direction]) == stone) return n;
-        return this.getReversibleNum(stone, x + this.dx[direction], y + this.dy[direction], direction, n + 1);
+    getReversibleNum(stone, x, y, direction, count = 0) {
+        const nextX = x + Field.dx[direction];
+        const nextY = y + Field.dy[direction];
+        const nextStone = this.getStone(nextX, nextY);
+        if (nextStone < 1) return 0;
+        if (nextStone === stone) return count;
+        return this.getReversibleNum(stone, nextX, nextY, direction, count + 1);
     }
 
     /**
-     * クリックされたマスの座標を返すメソッド
-     * @param {*} clientX 
-     * @param {*} clientY 
-     * @returns 
+     * クリックされた座標からマスの位置を取得するメソッド．
+     * @param {number} clientX クリックされたx座標
+     * @param {number} clientY クリックされたy座標
+     * @returns {number[]} マスの位置
      */
     getPosition(clientX, clientY) {
-        var y = Math.floor(clientY / (this.cellSize * 3 / 2));//クリックした値より小さい最大のマス
-        var x = Math.floor(clientX / (this.tSize / 2));//クリックした値より小さい最大のマス
-        if ((x + y) % 2 == 0) {//上向きの場合
-            //x,yが表す三角形の(一番上の)頂点を原点として相対的な座標でクリックしたマスのx座標がxかx＋１か判定する
-            var topOfTriangleY = y * this.cellSize * 3 / 2;
-            var topOfTriangleX = x * this.tSize / 2;
-            var relativeY = clientY - topOfTriangleY;
-            var relativeX = clientX - topOfTriangleX;
+        const y = Math.floor(clientY / (this.cellSize * 3 / 2));
+        const x = Math.floor(clientX / (this.triangleSize / 2));
+        return this.adjustPosition(x, y, clientX, clientY);
+    }
+
+    /**
+     * マスの位置を調整するメソッド．
+     * 変数x,yが表す三角形の頂点を原点として，
+     * 相対的な座標でクリックしたマスのx座標がxかx＋１か判定する．
+     * @param {number} x クリックされたx座標より小さい最大のx座標を持つマスのx座標
+     * @param {number} y クリックされたy座標より小さい最大のy座標を持つマスのy座標
+     * @param {number} clientX クリックされたx座標
+     * @param {number} clientY クリックされたy座標
+     * @returns {number[]} マスの位置
+     */
+    adjustPosition(x, y, clientX, clientY) {
+        if ((x + y) % 2 === 0) {// 上向き三角形の場合（xが偶数番目のマス）
+            const topOfTriangleY = y * this.cellSize * 3 / 2;
+            const topOfTriangleX = x * this.triangleSize / 2;
+            const relativeY = clientY - topOfTriangleY;
+            const relativeX = clientX - topOfTriangleX;
             if (relativeY < 2 * Math.sin(Math.PI / 3) * relativeX) x++;
-        } else if ((x + y) % 2 == 1) {//下向きの場合
-            //x,yが表す三角形の(一番下の)頂点を原点として相対的な座標でクリックしたマスのx座標がxかx＋１か判定する
-            var topOfTriangleY = (y + 1) * this.cellSize * 3 / 2;
-            var topOfTriangleX = x * this.tSize / 2;
-            var relativeY = clientY - topOfTriangleY;
-            var relativeX = clientX - topOfTriangleX;
+        } else if ((x + y) % 2 === 1) {// 下向き三角形の場合（xが奇数番目のマス）
+            const topOfTriangleY = (y + 1) * this.cellSize * 3 / 2;
+            const topOfTriangleX = x * this.triangleSize / 2;
+            const relativeY = clientY - topOfTriangleY;
+            const relativeX = clientX - topOfTriangleX;
             if (relativeY > - 2 * Math.sin(Math.PI / 3) * relativeX) x++;
         }
         return [x, y];
     }
 
-    //セッター
-    set(fieldList) { this.fieldList = fieldList; }
+    /**
+     * 引数の石をfieldListに格納するメソッド．
+     * @param {number} x x座標
+     * @param {number} y y座標
+     * @param {number} stone 石の色
+     * @returns {number} 引数で示す座標が盤面の外の場合は格納せず，-1を返す．
+     */
     setStone(x, y, stone) {
-        if (!this.checkOnField(x, y)) return -1;
+        if (!this.isOnField(x, y)) return -1;
         this.fieldList[x][y] = stone;
     }
 
     /**
-     * 引数のマスが盤面上であるか判定するメソッド
-     * @param {*} x 
-     * @param {*} y 
-     * @returns 
+     * 石を置けるか判定するメソッド．
+     * @param {number} stone 石の色
+     * @param {number} x x座標
+     * @param {number} y y座標
+     * @returns {boolean} 石を置けるかどうか
      */
-    checkOnField(x, y) {
-        /*
-         * size / tSize = 4
-         * よって
-         * ・y=-x+4
-         * ・y=x-12
-         * ・y=x+4
-         * ・y=-x+20
-         * ・y=0
-         * ・y=8
-         * の6直線に囲まれた六角形について考える
-         */
-        if (this.size / this.tSize <= x + y
-            && x - y <= (this.size / this.tSize) * 3
-            && y - x < this.size / this.tSize
-            && x + y < (this.size / this.tSize) * 5
+    canPut(stone, x, y) {
+        if (!this.isOnField(x, y) || this.getStone(x, y) > 0) {
+            return false;
+        }
+        // 周囲のマスをひっくり返せるか確かめる
+        for (var i = 0; i < DIRECTION_NUM; i++) {
+            if (this.getReversibleNum(stone, x, y, i, 0) > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 引数のマスが盤面上であるか判定するメソッド．
+     * size / triangleSize = 4[マス]
+     * よって
+     * ・y=-x+4
+     * ・y=x-12
+     * ・y=x+4
+     * ・y=-x+20
+     * ・y=0
+     * ・y=8
+     * 上記の6直線に囲まれた六角形について考える．
+     * @param {number} x x座標
+     * @param {number} y y座標
+     * @returns {boolean} 引数のマスが盤面上であるかどうか
+     */
+    isOnField(x, y) {
+        const s = this.size / this.triangleSize;
+
+        if (s <= x + y
+            && x - y <= s * 3
+            && y - x < s
+            && x + y < s * 5
             && 0 <= y
-            && y < (this.size / this.tSize) * 2) {
+            && y < s * 2) {
             return true;
         }
         return false
     }
 
     /**
-     * 引数の内容で石を置けるか判定するメソッド
-     * @param {*} stone 
-     * @param {*} x 
-     * @param {*} y 
-     * @returns 
-     */
-    canPut(stone, x, y) {
-        if (!this.checkOnField(x, y)) return false;
-        if (this.getStone(x, y) > 0) return;
-        // 周囲のマスをひっくり返せるか確かめる
-        for (var i = 0; i < 6; i++) {
-            if (this.getReversibleNum(stone, x, y, i, 0) > 0) return true;
-        }
-        return false;
-    }
-
-    /**
-     * 石を返すメソッド
-     * @param {*} stone 
-     * @param {*} x 
-     * @param {*} y 
-     * @param {*} direction 
-     * @returns 
+     * 石を返すメソッド．
+     * @param {number} stone 石の色
+     * @param {number} x x座標
+     * @param {number} y y座標
+     * @param {number} direction ひっくり返す方向
      */
     reverse(stone, x, y, direction) {
-        if (this.getStone(x + this.dx[direction], y + this.dy[direction]) == stone) return;
-        this.setStone(x + this.dx[direction], y + this.dy[direction], stone);
-        this.reverse(stone, x + this.dx[direction], y + this.dy[direction], direction);
+        if (this.getStone(x + Field.dx[direction], y + Field.dy[direction]) == stone) return;
+        this.setStone(x + Field.dx[direction], y + Field.dy[direction], stone);
+        this.reverse(stone, x + Field.dx[direction], y + Field.dy[direction], direction);
     }
 
     /**
-     * 盤面を描画するメソッド
-     * @param {*} currentStone 
-     * @param {*} selectedX 
-     * @param {*} selectedY 
-     */
+    * 盤面を描画するメソッド．
+    * @param {number} currentStone 現在のターンの石の色
+    * @param {number} selectedX 最後に選択されたx座標
+    * @param {number} selectedY 最後に選択されたy座標
+    */
     draw(currentStone, selectedX, selectedY) {
-        var direction = 1;
-        var x = 0;
-        var y = 0;
-
-        this.rectDrawer.draw(this.BG_COLOR, 0, 0, this.size * 2, this.size * Math.sin(Math.PI / 3) * 2);
+        const UPWARD = 0;
+        const DOWNWARD = 1;
+        this.rectDrawer.draw(Field.BG_COLOR, 0, 0, this.size * 2, this.size * Math.sin(Math.PI / 3) * 2);
         this.nextList.length = 0;
-        for (var i = 0; i < this.row; i++) {
-            for (var j = 0; j < this.column; j++) {
-                x = j * this.tSize / 2;
-                y = i * this.cellSize * 3 / 2 + 1;
-                if ((i + j) % 2 == 0) {// 上向きの三角形
-                    direction = 0;
-                    y += this.cellSize;
-                } else { //下向きの三角形
-                    direction = 1;
-                    y += this.cellSize / 2;
-                }
 
-                var bgColor = this.NORMAL_CELL_COLOR;// 通常マスは緑
-                if (this.canPut(currentStone, j, i)) {
-                    bgColor = this.PLACEABLE_CELL_COLOR;// 次に置けるマスは薄緑
-                    this.nextList.push([j, i]);
-                }
-                if (j == selectedX && i == selectedY) bgColor = this.SELECTED_CELL_COLOR;// 最後に石を置いたマスは黄色
+        for (let i = 0; i < Field.ROW; i++) {
+            for (let j = 0; j < Field.COLUMN; j++) {
+                const x = j * this.triangleSize / 2;
+                let y = i * this.cellSize * 3 / 2 + 1;
+                const direction = (i + j) % 2 === 0 ? UPWARD : DOWNWARD;
 
-                if (!this.checkOnField(j, i)) continue;
+                if (direction === UPWARD) y += this.cellSize;
+                else if (direction === DOWNWARD) y += this.cellSize / 2;
+
+                if (!this.isOnField(j, i)) continue;
+
+                const bgColor = this.getCellColor(currentStone, j, i, selectedX, selectedY);
                 this.triangleDrawer.draw(bgColor, x, y, direction);
-                if (this.getStone(j, i) == 1) this.circleDrawer.draw(this.COLOR_1, x, y, 0.9 * this.cellSize / 2);
-                else if (this.getStone(j, i) == 2) this.circleDrawer.draw(this.COLOR_2, x, y, 0.9 * this.cellSize / 2);
-                else if (this.getStone(j, i) == 3) this.circleDrawer.draw(this.COLOR_3, x, y, 0.9 * this.cellSize / 2);
+
+                const stone = this.getStone(j, i);
+                if (stone > 0) {
+                    this.circleDrawer.draw(Field.COLORS[stone], x, y, 0.9 * this.cellSize / 2);
+                }
             }
         }
     }
 
     /**
-     * 現在の盤面から各プレイヤーの得点リストを作成するメソッド
-     * @returns 
+     * マスの色を取得するメソッド．
+     * @param {number} currentStone 現在のターンの石の色
+     * @param {number} x 色を取得するマスのx座標
+     * @param {number} y 色を取得するマスのy座標
+     * @param {number} selectedX 最後に選択されたx座標
+     * @param {number} selectedY 最後に選択されたy座標
+     * @returns {number} マスの色
+     */
+    getCellColor(currentStone, x, y, selectedX, selectedY) {
+        if (this.canPut(currentStone, x, y)) {
+            this.nextList.push([x, y]);
+            return Field.PLACEABLE_CELL_COLOR;
+        }
+        return (x === selectedX && y === selectedY) ? Field.SELECTED_CELL_COLOR : Field.NORMAL_CELL_COLOR;
+    }
+
+    /**
+     * 盤面の得点リストを作成するメソッド．
+     * @returns {number[]} ポイントのリスト
      */
     createPointList() {
-        var pointOfPlayer1 = 0;
-        var pointOfPlayer2 = 0;
-        var pointOfPlayer3 = 0;
-        for (var i = 0; i < this.row; i++) {
-            for (var j = 0; j < this.column; j++) {
-                if (this.getStone(j, i) == 1) pointOfPlayer1++;
-                else if (this.getStone(j, i) == 2) pointOfPlayer2++;
-                else if (this.getStone(j, i) == 3) pointOfPlayer3++;
+        // 各プレイヤーの得点を保持するリスト
+        const points = new Array(MAX_PLAYER_NUM).fill(0);
+
+        for (let i = 0; i < Field.ROW; i++) {
+            for (let j = 0; j < Field.COLUMN; j++) {
+                const stone = this.getStone(j, i);
+                if (stone > 0) points[stone - 1]++;
             }
         }
-        return [pointOfPlayer1, pointOfPlayer2, pointOfPlayer3];
+
+        return points;
     }
 
     /**
-     * フィールドの情報をリセットするメソッド
+     * フィールドの情報をリセットするメソッド．
      */
     reset() {
-        this.fieldList = Array.from(new Array(this.column), () => new Array(this.row).fill(0));
+        this.fieldList = Array.from(new Array(Field.COLUMN), () => new Array(Field.ROW).fill(0));
         this.setStone(8, 2, 1);
         this.setStone(8, 3, 1);
         this.setStone(8, 4, 1);

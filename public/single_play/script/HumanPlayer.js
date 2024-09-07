@@ -1,13 +1,11 @@
 /**
- * 人間のプレイヤークラス
+ * 人間のプレイヤークラス．
  */
 class HumanPlayer extends Player {
-    constructor(id) {
-        super(id);
+    constructor(id, gameMaster) {
+        super(id, gameMaster);
         this.type = "human";
         this.id = id;
     }
-    //ゲッター
-    getType() { return this.type; }
 
 }

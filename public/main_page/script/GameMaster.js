@@ -14,7 +14,7 @@ class GameMaster {
         this.dbManager = dbManager;
         this.uiManager = uiManager;
     }
-    
+
     /**
      * 引数のIDのプレイヤーを返すメソッド．
      * @param {number} id ゲームで使用するID
