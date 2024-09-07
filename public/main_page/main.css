@@ -5,7 +5,7 @@
     box-sizing: border-box
 }
 
-h3{
+h3 {
     height: fit-content;
     margin: 0;
 }
@@ -57,7 +57,7 @@ body {
     height: 35px;
     cursor: pointer;
     z-index: 200;
-    
+
 }
 
 .hamburger_line {
@@ -110,7 +110,7 @@ body {
     right: 0;
 }
 
-hr{
+hr {
     width: 90%;
     margin: 20px 0;
 }
@@ -129,7 +129,7 @@ hr{
     flex-flow: column;
 }
 
-#user_info_top{
+#user_info_top {
     display: flex;
     align-items: center;
 }
@@ -139,12 +139,12 @@ hr{
     height: 25px;
 }
 
-#member_info_top{
+#member_info_top {
     display: flex;
     align-items: center;
 }
 
-#member_icon{
+#member_icon {
     width: 25px;
     height: 25px;
 }
@@ -190,6 +190,6 @@ canvas {
     background-color: rgb(50 50 60);
 }
 
-#message{
+#message {
     color: white;
 }
