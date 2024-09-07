@@ -342,7 +342,6 @@ class DBManager {
                 uid: uid,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
-            console.log('タイムスタンプが正常に保存されました。');
         } catch (error) {
             console.error('タイムスタンプの保存中にエラーが発生しました:', error);
         }
