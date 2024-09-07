@@ -6,7 +6,5 @@ class CpuPlayer extends Player {
         super(id, gameMaster);
         this.type = "cpu";
     }
-    
-    // ゲッター
-    getType() {return this.type;}
+
 }

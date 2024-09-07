@@ -7,25 +7,29 @@ class GameMaster {
         this.currentStone = 0;
         this.selectedX = 0;
         this.selectedY = 0;
-        this.gameStatus = 0;
+        this.gameStatus = GAME_READY;
         this.skipNum = 0;
         this.playerList = [];
         this.field = field;
         this.dbManager = dbManager;
         this.uiManager = uiManager;
     }
-
     /**
      * 引数のIDのプレイヤーを返すメソッド
      * @param {*} id 
      * @returns 
      */
-    getPlayer(id) { return this.playerList[id - 1]; }
+    getPlayer(id) {
+        return this.playerList[id - 1];
+    }
 
-    // ゲッター
-    getStatus() { return this.gameStatus; }
-    getCurrentStone() { return this.currentStone; }
-    getPlayerNum() { return this.playerList.length; }
+    /**
+     * プレイヤーの人数を返すメソッド．
+     * @returns 
+     */
+    getPlayerNum() {
+        return this.playerList.length;
+    }
 
     /**
      * 複数データのセッター
@@ -40,21 +44,23 @@ class GameMaster {
         this.selectedX = selectedX;
         this.selectedY = selectedY;
         this.gameStatus = gameStatus;
-        this.field.set(fieldList);
+        this.field.fieldList = fieldList;
         this.field.draw(this.currentStone, this.selectedX, this.selectedY);
     }
 
-    /**
-     * 現在のステータスのセッター
-     * @param {*} gameStatus 
-     */
-    setStatus(gameStatus) { this.gameStatus = gameStatus; }
-
     async progress() {
         if (this.gameStatus != 1) return;
-        while (this.field.getNextList().length == 0 && this.skipNum < 3) this.skipTurn();
-        if (this.playerList[this.currentStone - 1].getType() == "human" || this.skipNum >= 3) return;
-        await new Promise((resolve) => setTimeout(resolve, 1000));// 1秒まつ
+
+        while (this.field.nextList.length == 0 && this.skipNum < MAX_PLAYER_NUM) {
+            this.skipTurn();
+        }
+
+        if (this.playerList[this.currentStone - 1].type == "human" || this.skipNum >= MAX_PLAYER_NUM) {
+            return;
+        }
+
+        // 1秒まつ
+        await new Promise((resolve) => setTimeout(resolve, 1000));
         gameMaster.autoPut();
         gameMaster.progress();
     }
@@ -65,8 +71,14 @@ class GameMaster {
      */
     async register(player) {
         this.playerList.push(player);
-        if (player.getType() == "cpu") this.uiManager.setText("user_name" + player.getId(), "CPU");
-        if (this.gameStatus == 1 && this.playerList.length == 3) gameMaster.progress();
+
+        if (player.type == "cpu") {
+            this.uiManager.setText("user_name" + player.id, "CPU");
+        }
+
+        if (this.gameStatus === GAME_PLAYING && this.playerList.length === MAX_PLAYER_NUM) {
+            gameMaster.progress();
+        }
     }
 
     /**
@@ -86,42 +98,46 @@ class GameMaster {
       * @param {*} clientY 
       */
     action(clientX, clientY) {
-        if (this.playerList[this.currentStone - 1].getType() == "human") this.putStone(clientX, clientY);
+        if (this.playerList[this.currentStone - 1].type == "human") {
+            this.putStone(clientX, clientY);
+        }
         this.progress();
     }
 
     /**
-     * 結果を表示するメソッド
-     * @param {*} id 
-     * @returns 
+     * ゲーム結果を表示する
+     * @param {number} id プレイヤーID
      */
     displayResult(id) {
-        var message = "試合終了, ";
-        var ranking = 0;
-        var point = 0;
-        var pointList = this.field.createPointList();
-        if (this.playerList.length == 0) return;
-        this.playerList[id - 1].setPoint(pointList[id - 1]);
-        point = pointList[id - 1];
-        pointList.sort(function (a, b) { return b - a });
-        for (var i = 0; i < pointList.length; i++) {
-            if (pointList[i] == this.playerList[id - 1].getPoint()) {
-                this.playerList[id - 1].setRanking(i + 1);
-                ranking = i + 1;
-                break;
-            }
-        }
-        message += "得点: " + point + ", 順位: " + ranking;
+        let message = "試合終了, ";
+        const pointList = this.field.createPointList();
+        if (this.playerList.length === 0) return;
+
+        const player = this.playerList[id - 1];
+        player.point = pointList[id - 1];
+        const ranking = this.calculateRanking(id, pointList);
+
+        message += `得点: ${player.point}, 順位: ${ranking}`;
         this.uiManager.setText("logout_btn", "終了");
         this.uiManager.setText("message", message);
     }
 
     /**
-     * ターンを変更するメソッド
+     * プレイヤーの順位を計算
+     * @param {number} id プレイヤーID
+     * @param {Array} pointList ポイントリスト
+     * @returns {number} 順位
+     */
+    calculateRanking(id, pointList) {
+        const playerPoint = pointList[id - 1];
+        return pointList.filter(point => point > playerPoint).length + 1;
+    }
+
+    /**
+     * ターンを変更する
      */
     async changeTurn() {
-        this.currentStone++;
-        if (this.currentStone > 3) this.currentStone = 1;
+        this.currentStone = this.currentStone % MAX_PLAYER_NUM + 1;
         this.field.draw(this.currentStone, this.selectedX, this.selectedY);
         await this.dbManager.setData(this.selectedX, this.selectedY, this.currentStone, this.gameStatus, this.field);
     }
@@ -133,62 +149,63 @@ class GameMaster {
         this.skipNum++;
         this.changeTurn();
         // 全員スキップならば試合終了
-        if (this.skipNum >= 3) this.dbManager.update("gameStatus", 2);
+        if (this.skipNum >= MAX_PLAYER_NUM) {
+            this.dbManager.update("gameStatus", GAME_FINISHED);
+        }
     }
 
     /**
-     * 引数のマスを選択できるか判定するか判定するメソッド
-     * @param {*} clientX 
-     * @param {*} clientY 
-     * @param {*} id 
-     * @returns 
+     * 指定されたマスを選択できるか判定するメソッド
+     * @param {number} clientX クリックされた位置のX座標
+     * @param {number} clientY クリックされた位置のY座標
+     * @param {number} id プレイヤーID
+     * @returns {boolean} マスを選択できるかどうか
      */
     canSelect(clientX, clientY, id) {
-        if (this.currentStone != id) return false;// 自分の番か判定
-        // クリックされたマスの座標を取得
-        var triangle = this.field.getPosition(clientX, clientY);
-        var x = triangle[0];
-        var y = triangle[1];
-        if (!this.field.canPut(id, x, y)) return false;
-        return true;
+        if (this.currentStone !== id) return false;
+
+        const [x, y] = this.field.getPosition(clientX, clientY);
+        return this.field.canPut(id, x, y);
     }
 
     /**
-     * 引数のマスに石を置くメソッド
-     * @param {*} clientX 
-     * @param {*} clientY 
-     */
+    * 指定されたマスに石を置くメソッド
+    * @param {number} clientX クリックされた位置のX座標
+    * @param {number} clientY クリックされた位置のY座標
+    */
     putStone(clientX, clientY) {
         // クリックされたマスの座標を取得
-        var triangle = this.field.getPosition(clientX, clientY);
-        this.selectedX = triangle[0];
-        this.selectedY = triangle[1];
+        const [x, y] = this.field.getPosition(clientX, clientY);
+        this.selectedX = x;
+        this.selectedY = y;
 
         this.field.setStone(this.selectedX, this.selectedY, this.currentStone);
-        for (var i = 0; i < 6; i++) {
-            if (this.field.getReversibleNum(this.currentStone, this.selectedX, this.selectedY, i, 0) > 0) {
-                this.field.reverse(this.currentStone, this.selectedX, this.selectedY, i);
-            }
-        }
-        this.skipNum = 0;
-        this.changeTurn();
+        this.reverseStonesInAllDirections();
     }
 
     /**
      * ランダムで石を置くメソッド
      */
     autoPut() {
-        var nextList = this.field.getNextList();
-        var index = Math.floor(Math.random() * nextList.length);
-        this.selectedX = nextList[index][0];
-        this.selectedY = nextList[index][1];
+        const nextList = this.field.nextList;
+        const randomIndex = Math.floor(Math.random() * nextList.length);
+
+        [this.selectedX, this.selectedY] = nextList[randomIndex];
 
         this.field.setStone(this.selectedX, this.selectedY, this.currentStone);
-        for (var i = 0; i < 6; i++) {
+        this.reverseStonesInAllDirections();
+    }
+
+    /**
+     * 全方向の石をひっくり返す
+     */
+    reverseStonesInAllDirections() {
+        for (let i = 0; i < DIRECTION_NUM; i++) {
             if (this.field.getReversibleNum(this.currentStone, this.selectedX, this.selectedY, i, 0) > 0) {
                 this.field.reverse(this.currentStone, this.selectedX, this.selectedY, i);
             }
         }
+
         this.skipNum = 0;
         this.changeTurn();
     }
@@ -202,7 +219,9 @@ class GameMaster {
         this.selectedY = 0;
         this.gameStatus = 0;
         this.skipNum = 0;
+
         this.field.reset();
+
         await this.dbManager.setData(this.selectedX, this.selectedY, this.currentStone, this.gameStatus, this.field);
     }
 
@@ -211,9 +230,12 @@ class GameMaster {
      */
     async start() {
         this.init();
-        this.gameStatus = 1;
+
+        this.gameStatus = GAME_PLAYING;
         await this.dbManager.update("gameStatus", this.gameStatus);
+
         await this.progress();
+
         this.uiManager.setText("message", "ゲームスタート");
         this.uiManager.setText("ready_btn", "");
     }

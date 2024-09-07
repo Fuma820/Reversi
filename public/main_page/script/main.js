@@ -7,18 +7,149 @@ const firebaseConfig = {
     messagingSenderId: "32628222705",
     appId: "1:32628222705:web:6784cadb557a1f8d301750",
     measurementId: "G-DFPZ7PDY47"
-}
-var db = firebase.firestore(firebase.initializeApp(firebaseConfig));
-var uid = null;// ユーザーのログイン状態を管理するためのID
-var id = null;// ゲーム内で使用するID
-var noDBAccPeriod = 0;// サーバーにアクセスしていない期間
-var limitTime = 10 * 60 * 1000;// 単位[ms]，タイムアウト時間(10分)
-var canvas = document.querySelector("canvas");
-var resolution = canvas.width / document.querySelector("canvas").clientWidth;// canvasの解像度
+};
+
+const GAME_READY = 0;
+const GAME_PLAYING = 1;
+const GAME_FINISHED = 2;
+
+const MAX_PLAYER_NUM = 3;
+const DIRECTION_NUM = 6; // 三角形のマスなので6方向を確認
+const LIMIT_TIME = 10 * 60 * 1000; // タイムアウト時間（10分）
+
+let db = firebase.firestore(firebase.initializeApp(firebaseConfig));
+let uid = null;// ユーザーのログイン状態を管理するためのID
+let id = null;// ゲーム内で使用するID
+let noDBAccPeriod = 0;// サーバーにアクセスしていない期間
+let canvas = document.querySelector("canvas");
+let resolution = canvas.width / document.querySelector("canvas").clientWidth;
+
 const uiManager = new UIManager();
 const dbManager = new DBManager(db);
-const field = new Field(canvas);
-const gameMaster = new GameMaster(field, dbManager, uiManager);
+const gameMaster = new GameMaster(new Field(canvas), dbManager, uiManager);
+
+const playerIds = [1, 2, 3];
+const stoneColors = {
+    1: "赤",
+    2: "青",
+    3: "白"
+};
+
+
+// ウィンドウリサイズ時に実行
+window.addEventListener("resize", () => {
+    resolution = canvas.width / document.querySelector("canvas").clientWidth;
+});
+
+// フィールド情報更新時実行
+db.collection("data").doc("field").onSnapshot(()=>fieldUpdate());
+// ユーザー名変更時実行
+db.collection("users").onSnapshot(()=>updatePlayerNames());
+
+// ログイン状態変更時実行
+firebase.auth().onAuthStateChanged(async user => {
+    try {
+        if (!user) {
+            window.location.replace("../index.html");
+            return;
+        }
+
+        uid = user.uid;
+        const [userExists, playerExists] = await Promise.all([
+            dbManager.existUserData(uid),
+            dbManager.existPlayer(uid)
+        ]);
+
+        if (!userExists) await dbManager.createUserDoc(uid);
+        id = await dbManager.createID(uid);
+
+        if (!playerExists) await timeOutAction();
+
+        const status = await dbManager.getStatus(id);
+        if (status !== GAME_READY) uiManager.disableBtn("ready_btn");
+
+        const color = stoneColors[id] || "";
+        uiManager.setText("player_color", color);
+        await dbManager.update(`uid${id}`, uid);
+
+        const gameStatus = gameMaster.gameStatus;
+        if (gameStatus !== GAME_READY) uiManager.setText("ready_btn", "");
+        if (gameStatus === GAME_FINISHED) gameMaster.displayResult(id);
+
+    } catch (error) {
+        console.error("ログイン状態変更時にエラーが発生しました:", error);
+    }
+});
+
+// ユーザー情報更新時実行
+db.collection("data").doc("users").onSnapshot(async snapshot => {
+    try {
+        const userIds = [];
+        for (let i = 1; i <= MAX_PLAYER_NUM; i++) {
+            userIds.push(snapshot.data()[`uid${i}`]);
+        }
+        await updatePlayerNames();
+
+        const playerNum = await dbManager.getPlayerNum();
+        const readyNum = await dbManager.getReadyNum();
+
+        uiManager.setText("player_num", playerNum);
+        uiManager.setText("message", `${readyNum}人が準備完了`);
+
+        if (gameMaster.getPlayerNum() === 0 && playerNum !== 0) {
+            if (playerNum > readyNum) return;
+
+            await registerPlayers(userIds);
+            if (await dbManager.getGameStatus() === GAME_READY) {
+                await gameMaster.start();
+            }
+        }
+
+        if (gameMaster.gameStatus === GAME_PLAYING) {
+            await replaceLoggedOutPlayers(userIds);
+        }
+    } catch (error) {
+        console.error("ユーザー情報更新時にエラーが発生しました:", error);
+    }
+});
+
+/**
+ * 盤面の情報を更新する関数
+ */
+async function fieldUpdate() {
+    try {
+        await dbManager.syncWith(gameMaster);
+
+        const gameStatus = gameMaster.gameStatus;
+        const currentStone = gameMaster.currentStone;
+
+        if (gameStatus === GAME_FINISHED) {
+            gameMaster.displayResult(id);
+            return;
+        }
+
+        if (gameStatus === GAME_PLAYING) {
+            uiManager.setText("ready_btn", "");
+        }
+
+        uiManager.setText("current_turn", stoneColors[currentStone] || "");
+    } catch (error) {
+        console.error("盤面情報の更新中にエラーが発生しました:", error);
+    }
+}
+
+/**
+ * タイムアウト処理関数
+ */
+async function timeOutAction() {
+    await dbManager.syncWith(gameMaster);
+    if (await dbManager.checkTimeOut(LIMIT_TIME)) {
+        await resetPlayersData();
+    }
+    else if (gameMaster.gameStatus !== GAME_READY) {
+        await dbManager.logout();
+    }
+}
 
 /**
  * データベースのプレイヤー情報をリセットする関数
@@ -29,37 +160,14 @@ async function resetPlayersData() {
 }
 
 /**
- * 盤面の情報を更新する関数
- */
-async function fieldUpdate() {
-    await dbManager.syncWith(gameMaster);
-    if (gameMaster.getStatus() == 2) gameMaster.displayResult(id);// 試合が終了していれば，試合結果を表示
-    // UI表示変更
-    if (gameMaster.getStatus() == 1) uiManager.setText("ready_btn", "");
-    if (gameMaster.getCurrentStone() == 1) uiManager.setText("current_turn", "赤");
-    if (gameMaster.getCurrentStone() == 2) uiManager.setText("current_turn", "青");
-    if (gameMaster.getCurrentStone() == 3) uiManager.setText("current_turn", "白");
-}
-
-/**
- * タイムアウト処理関数
- */
-async function timeOutAction() {
-    await dbManager.syncWith(gameMaster);
-    if (await dbManager.checkTimeOut(limitTime)) await resetPlayersData();
-    else if (gameMaster.getStatus() != 0) await dbManager.logout();// 他の人が試合中ならログアウト
-}
-
-/**
- * 試合をリタイア(終了)する関数
+ * 試合をリタイア(終了)する関数．
  */
 async function retire() {
-    if (await dbManager.getPlayerNum() == 1) {
-        // プレイヤーが一人しか参加していないならusersを初期化する
+    const playerNum = await dbManager.getPlayerNum();
+    if (playerNum == 1) {
         await resetPlayersData();
-    } else {// データベースから自分のuidを削除する
+    } else {
         await dbManager.deleteUser(id);
-
     }
     await dbManager.logout();
 }
@@ -68,86 +176,77 @@ async function retire() {
  * 準備完了関数
  */
 async function ready() {
-    await dbManager.checkLogin();
-    if (id == 1) await dbManager.update("status1", 1);
-    else if (id == 2) await dbManager.update("status2", 1);
-    else if (id == 3) await dbManager.update("status3", 1);
-    uiManager.disableBtn("ready_btn");
+    try {
+        await dbManager.checkLogin(uid);
+
+        if (id >= 1 && id <= MAX_PLAYER_NUM) {
+            await dbManager.update(`status${id}`, GAME_PLAYING);
+        }
+
+        uiManager.disableBtn("ready_btn");
+    } catch (error) {
+        console.error("準備完了処理中にエラーが発生しました:", error);
+    }
 }
 
 /**
  * フィールドクリック時実行関数
- * @param {*} e 
- * @returns 
  */
 async function onClick(e) {
-    await dbManager.checkLogin();
-    if (gameMaster.getStatus() == 0) return false;// ゲームがスタートしていなければリターン
-    var rect = e.target.getBoundingClientRect();
-    var x = Math.floor((e.clientX - rect.left) * resolution);
-    var y = Math.floor((e.clientY - rect.top) * resolution);
+    await dbManager.checkLogin(uid);
+    if (gameMaster.gameStatus == GAME_READY) return false;
+
+    const rect = e.target.getBoundingClientRect();
+    const x = Math.floor((e.clientX - rect.left) * resolution);
+    const y = Math.floor((e.clientY - rect.top) * resolution);
+
     if (!gameMaster.canSelect(x, y, id)) return;
     gameMaster.action(x, y);
 }
 
-// ウィンドウリサイズ時に実行
-window.addEventListener("resize", () => { resolution = canvas.width / document.querySelector("canvas").clientWidth; });
+/**
+ * プレイヤーのUIDを取得してUIを更新する関数
+ */
+async function updatePlayerNames() {
+    try {
+        const uids = await Promise.all(playerIds.map(id => dbManager.getUid(id)));
 
-// ログイン状態変更時実行
-firebase.auth().onAuthStateChanged(async user => {
-    if (!user) window.location.replace("../index.html");
-    uid = user.uid;
-    if (!await dbManager.existUserData(uid)) await dbManager.createUserDoc(uid);
-    id = await dbManager.createID();
-    if (!await dbManager.existPlayer(uid)) await timeOutAction();
-    // UIを同期
-    if (dbManager.getStatus(id) != 0) uiManager.disableBtn("ready_btn");
-    var color = id == 1 ? "赤" : id == 2 ? "青" : id == 3 ? "白" : "";
-    await dbManager.update("uid" + id, uid);
-    uiManager.setText("player_color", color);
-    if (gameMaster.getStatus() != 0) uiManager.setText("ready_btn", "");
-    if (gameMaster.getStatus() == 2) gameMaster.displayResult(id);
-});
-
-// フィールド情報更新時実行
-db.collection("data").doc("field").onSnapshot(() => { fieldUpdate(); });
-
-// ユーザー情報更新時実行
-db.collection("data").doc("users").onSnapshot(async snapshot => {
-    // 名前を取得する
-    if (snapshot.data().uid1 != null) uiManager.setText("user_name1", await dbManager.getUserName(snapshot.data().uid1));
-    if (snapshot.data().uid2 != null) uiManager.setText("user_name2", await dbManager.getUserName(snapshot.data().uid2));
-    if (snapshot.data().uid3 != null) uiManager.setText("user_name3", await dbManager.getUserName(snapshot.data().uid3));
-    if (dbManager.getStatus(id) == 1) uiManager.disableBtn("ready_btn");
-    uiManager.setText("player_num", await dbManager.getPlayerNum());// 参加人数表示
-    uiManager.setText("message", await dbManager.getReadyNum() + "人が準備完了");// 準備完了した人数表示
-
-    if (gameMaster.getPlayerNum() == 0 && await dbManager.getPlayerNum() != 0) {// 準備中またはリロードした場合
-        if (await dbManager.getPlayerNum() > await dbManager.getReadyNum()) return;// ステータスが全員が準備中でないならreturn
-        // 参加者を登録(人数が足りなければ代わりにCPUを登録する)
-        if (snapshot.data().uid1 != null) gameMaster.register(new HumanPlayer(1, gameMaster));
-        else gameMaster.register(new CpuPlayer(1, gameMaster));
-        if (snapshot.data().uid2 != null) gameMaster.register(new HumanPlayer(2, gameMaster));
-        else gameMaster.register(new CpuPlayer(2, gameMaster));
-        if (snapshot.data().uid3 != null) gameMaster.register(new HumanPlayer(3, gameMaster));
-        else gameMaster.register(new CpuPlayer(3, gameMaster));
-        // ゲームスタート判定(リロードの場合実行しない)
-        if (await dbManager.getGameStatus() == 0) await gameMaster.start();
+        // 各UIDに対してユーザー名を取得してUIを更新
+        await Promise.all(uids.map(async (uid, index) => {
+            if (uid != null) {
+                const userName = await dbManager.getUserName(uid);
+                uiManager.setText(`user_name${playerIds[index]}`, userName);
+            }
+        }));
+    } catch (error) {
+        console.error("ユーザー名の更新中にエラーが発生しました:", error);
     }
-    if (gameMaster.getStatus() == 1) {
-        // ゲーム中ログアウトしたプレイヤーがいればCPUに切り替える
-        if (snapshot.data().uid1 == null && gameMaster.getPlayer(1).getType() == "human") gameMaster.release(1);
-        if (snapshot.data().uid2 == null && gameMaster.getPlayer(2).getType() == "human") gameMaster.release(2);
-        if (snapshot.data().uid3 == null && gameMaster.getPlayer(3).getType() == "human") gameMaster.release(3);
-    }
-});
+}
 
-// ユーザー名変更時実行
-db.collection("users").onSnapshot(async () => {
-    var uid1 = await dbManager.getUid(1);
-    var uid2 = await dbManager.getUid(2);
-    var uid3 = await dbManager.getUid(3);
-    if (uid1 != null) uiManager.setText("user_name1", await dbManager.getUserName(uid1));
-    if (uid2 != null) uiManager.setText("user_name2", await dbManager.getUserName(uid2));
-    if (uid3 != null) uiManager.setText("user_name3", await dbManager.getUserName(uid3));
-});
+/**
+ * プレイヤーの登録処理を行う関数
+ */
+async function registerPlayers(userIds) {
+    const registerPlayer = (uid, playerId) => {
+        if (uid != null) {
+            gameMaster.register(new HumanPlayer(playerId, gameMaster));
+        } else {
+            gameMaster.register(new CpuPlayer(playerId, gameMaster));
+        }
+    };
+
+    userIds.forEach((uid, index) => registerPlayer(uid, index + 1));
+}
+
+/**
+ * ログアウトしたプレイヤーをCPUに切り替える関数
+ */
+async function replaceLoggedOutPlayers(userIds) {
+    const releasePlayerIfLoggedOut = (uid, playerId) => {
+        if (uid == null && gameMaster.getPlayer(playerId).type === "human") {
+            gameMaster.release(playerId);
+        }
+    };
+
+    userIds.forEach((uid, index) => releasePlayerIfLoggedOut(uid, index + 1));
+}

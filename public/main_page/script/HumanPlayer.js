@@ -7,7 +7,5 @@ class HumanPlayer extends Player {
         this.type = "human";
         this.id = id;
     }
-    //ゲッター
-    getType() { return this.type; }
 
 }

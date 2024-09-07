@@ -2,252 +2,335 @@
  * データベースの更新，値の取得などを行うクラス
  */
 class DBManager {
-    constructor(db) {
+   constructor(db) {
         this.db = db;
     }
 
     /**
-     * 引数のidのユーザーのuidを取得するメソッド
-     * @param {*} id 
-     * @returns 
+     * idに基づきユーザーのuidを取得するメソッド
+     * @param {number} id  ユーザーのID (1, 2, 3)
+     * @returns {Promise<string | undefined>}
      */
     async getUid(id) {
-        var result;
-        await db.collection("data").doc("users").get().then(async doc => {
-            if (id == 1) result = doc.data().uid1;
-            if (id == 2) result = doc.data().uid2;
-            if (id == 3) result = doc.data().uid3;
-        });
-        return result;
+        try {
+            const doc = await this.db.collection("data").doc("users").get();
+            return doc.data()[`uid${id}`];
+        } catch (error) {
+            console.error("Error getting UID:", error);
+        }
     }
 
     /**
-     * 引数のuidのユーザーidを取得するメソッド
-     * @param {*} uid 
-     * @returns 
+     * uidに基づきユーザー名を取得するメソッド
+     * @param {string} uid 
+     * @returns {Promise<string>}
      */
     async getUserName(uid) {
-        var result = "未設定";
-        await db.collection("users").doc(uid).get().then(doc => {
-            if (doc.exists) result = doc.data().name;
-        });
-        return result;
+        try {
+            const doc = await this.db.collection("users").doc(uid).get();
+            return doc.exists ? doc.data().name : "未設定";
+        } catch (error) {
+            console.error("Error getting username:", error);
+            return "未設定";
+        }
     }
 
     /**
      * ゲームの状態を取得するメソッド
-     * @returns 
+     * @returns {Promise<any>}
      */
     async getGameStatus() {
-        var result;
-        await db.collection("data").doc("field").get().then(doc => {
-            result = doc.data().gameStatus;
-        });
-        return result;
+        try {
+            const doc = await this.db.collection("data").doc("field").get();
+            return doc.data().gameStatus;
+        } catch (error) {
+            console.error("Error getting game status:", error);
+        }
     }
 
     /**
-     * 引数のidの準備状況を取得するメソッド
-     * @param {*} id 
-     * @returns 
+     * idに基づき準備状況を取得するメソッド
+     * @param {number} id 
+     * @returns {Promise<number | undefined>}
      */
     async getStatus(id) {
-        var result;
-        await db.collection("data").doc("users").get().then(doc => {
-            if (id == 1) { result = doc.data().status1 }
-            else if (id == 2) { result = doc.data().status2 }
-            else if (id == 3) { result = doc.data().status3 }
-        });
-        return result;
+        try {
+            const doc = await this.db.collection("data").doc("users").get();
+            return doc.data()[`status${id}`];
+        } catch (error) {
+            console.error("Error getting status:", error);
+        }
     }
 
     /**
-     * 参加プレイヤーの数を取得するメソッド
-     * @returns 
+     * 参加プレイヤー数を取得するメソッド
+     * @returns {Promise<number>}
      */
     async getPlayerNum() {
-        var result = 0// 試合に参加している人数
-        await db.collection("data").doc("users").get().then(doc => {
-            if (doc.data().uid1 != null) result++;
-            if (doc.data().uid2 != null) result++;
-            if (doc.data().uid3 != null) result++;
-        });
-        return result;
+        try {
+            const doc = await this.db.collection("data").doc("users").get();
+            let count = 0;
+
+            for (let i = 1; i <= MAX_PLAYER_NUM; i++) {
+                if (doc.data()[`uid${i}`]) {
+                    count++;
+                }
+            }
+
+            return count;
+        } catch (error) {
+            console.error("Error getting player number:", error);
+            return 0;
+        }
     }
 
     /**
-     * 準備完了したプレイヤーの数を取得するメソッド
-     * @returns 
+     * 準備完了したプレイヤー数を取得するメソッド
+     * @returns {Promise<number>}
      */
     async getReadyNum() {
-        var result = 0// 試合に参加している人数
-        await db.collection("data").doc("users").get().then(doc => {
-            if (doc.data().status1 == 1) result++;
-            if (doc.data().status2 == 1) result++;
-            if (doc.data().status3 == 1) result++;
-        });
-        return result;
+        try {
+            const doc = await this.db.collection("data").doc("users").get();
+            let readyCount = 0;
+
+            for (let i = 1; i <= MAX_PLAYER_NUM; i++) {
+                if (doc.data()[`status${i}`] === GAME_PLAYING) {
+                    readyCount++;
+                }
+            }
+
+            return readyCount;
+        } catch (error) {
+            console.error("Error getting ready number:", error);
+            return 0;
+        }
     }
 
     /**
      * ゲームの参加ユーザー情報を初期化するメソッド
      */
     async resetUsers() {
-        await this.db.collection("data").doc("users").update({
-            uid1: null,
-            uid2: null,
-            uid3: null,
-            status1: 0,
-            status2: 0,
-            status3: 0
-        });
+        try {
+            const updateData = {};
+
+            for (let i = 1; i <= MAX_PLAYER_NUM; i++) {
+                updateData[`uid${i}`] = null;
+                updateData[`status${i}`] = 0;
+            }
+
+            await this.db.collection("data").doc("users").update(updateData);
+        } catch (error) {
+            console.error("Error resetting users:", error);
+        }
     }
 
     /**
-     * データベースの盤面のデータを更新するメソッド
-     * @param {*} selectedX 
-     * @param {*} selectedY 
-     * @param {*} currentStone 
-     * @param {*} gameStatus 
-     * @param {*} field 
+     * 盤面データを更新するメソッド
+     * @param {number} selectedX 
+     * @param {number} selectedY 
+     * @param {number} currentStone 
+     * @param {string} gameStatus 
+     * @param {object} field 
      */
     async setData(selectedX, selectedY, currentStone, gameStatus, field) {
-        await this.db.collection("data").doc("field").update({
-            x: selectedX,
-            y: selectedY,
-            stone: currentStone,
-            gameStatus: gameStatus,
-            fieldList: JSON.stringify(field.getFieldList()),
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
+        try {
+            await this.db.collection("data").doc("field").update({
+                x: selectedX,
+                y: selectedY,
+                stone: currentStone,
+                gameStatus: gameStatus,
+                fieldList: JSON.stringify(field.fieldList),
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        } catch (error) {
+            console.error("Error setting data:", error);
+        }
     }
 
     /**
-     * 引数に与えられたデータベースの情報を更新するメソッド
-     * @param {*} property 
+     * 任意のプロパティの値を更新するメソッド
+     * @param {string} property 
      * @param {*} value 
      */
     async update(property, value) {
-        if (property == "uid1") await db.collection("data").doc("users").update({ uid1: value });
-        else if (property == "uid2") await db.collection("data").doc("users").update({ uid2: value });
-        else if (property == "uid3") await db.collection("data").doc("users").update({ uid3: value });
-        else if (property == "status1") await db.collection("data").doc("users").update({ status1: value });
-        else if (property == "status2") await db.collection("data").doc("users").update({ status2: value });
-        else if (property == "status3") await db.collection("data").doc("users").update({ status3: value });
-        else if (property == "gameStatus") await db.collection("data").doc("field").update({ gameStatus: value });
+        try {
+            if (property.startsWith("uid") || property.startsWith("status")) {
+                await this.db.collection("data").doc("users").update({ [property]: value });
+            } else if (property === "gameStatus") {
+                await this.db.collection("data").doc("field").update({ gameStatus: value });
+            }
+        } catch (error) {
+            console.error("Error updating property:", error);
+        }
     }
 
     /**
-     * ローカルの情報(gameMaster)をデータベースと同期させるメソッド
-     * @param {*} gameMaster 
+     * ローカルのゲームデータをデータベースと同期させるメソッド
+     * @param {object} gameMaster 
      */
     async syncWith(gameMaster) {
-        await this.db.collection("data").doc("field").get().then(doc => {
-            gameMaster.setData(doc.data().stone, doc.data().x, doc.data().y,
-                doc.data().gameStatus, JSON.parse(doc.data().fieldList));
-        });
+        try {
+            const doc = await this.db.collection("data").doc("field").get();
+            const data = doc.data();
+
+            gameMaster.setData(data.stone, data.x, data.y, data.gameStatus, JSON.parse(data.fieldList));
+        } catch (error) {
+            console.error("Error syncing with database:", error);
+        }
     }
 
     /**
      * ログアウトメソッド
      */
     async logout() {
-        firebase.auth().signOut().then(() => {
-            // Sign-out successful.
-        }).catch((error) => {
-            // An error happened.
-            console.error("Error logout: ", error);
-        });
+        try {
+            await firebase.auth().signOut();
+
+            console.log("Successfully signed out.");
+        } catch (error) {
+            console.error("Error during logout:", error);
+        }
     }
 
     /**
      * ログインしているか確認するメソッド
      */
-    async checkLogin() {
-        await this.db.collection("data").doc("users").get().then(doc => {
-            if (doc.data().uid1 != uid && doc.data().uid2 != uid && doc.data().uid3 != uid) {
-                this.logout();
+    async checkLogin(uid) {
+        try {
+            const doc = await this.db.collection("data").doc("users").get();
+            const data = doc.data();
+
+            let isLoggedIn = false;
+            for (let i = 1; i <= MAX_PLAYER_NUM; i++) {
+                if (data[`uid${i}`] === uid) {
+                    isLoggedIn = true;
+                    break;
+                }
             }
-        });
+
+            // uid が存在しない場合はログアウト
+            if (!isLoggedIn) {
+                await this.logout();
+            }
+        } catch (error) {
+            console.error("Error checking login status:", error);
+        }
     }
 
     /**
      * タイムアウトしているか確認するメソッド
-     * @param {*} limitTime 
-     * @returns 
+     * @param {number} limitTime タイムアウト判定の制限時間 (ms)
+     * @returns {Promise<boolean>} タイムアウトしているかどうか
      */
     async checkTimeOut(limitTime) {
-        var result = false;
-        await db.collection("data").doc("field").get().then(doc => {
-            // 最後の処理からlimitTime以上経っていれば初期化する
-            if (doc.data().createdAt != null) {
-                noDBAccPeriod = new Date().getTime() - doc.data().createdAt.toDate().getTime();
+        try {
+            const doc = await this.db.collection("data").doc("field").get();
+            const createdAt = doc.data().createdAt;
+
+            if (createdAt) {
+                const noDBAccPeriod = Date.now() - createdAt.toDate().getTime();
+                return noDBAccPeriod > limitTime;
             }
-            if (noDBAccPeriod > limitTime) result = true;
-        });
-        return result;
+
+            return false;
+        } catch (error) {
+            console.error("Error checking timeout:", error);
+            return false;
+        }
     }
 
     /**
-     * ゲームで使用するidを生成するメソッド
-     * @returns 
+     * ゲームで使用するIDを生成するメソッド
+     * エラーが発生した場合は0を返す
+     * @param {string} uid ユーザーのUID
+     * @returns {Promise<number>} ゲームのID (1, 2, 3)
      */
-    async createID() {
-        var result = 0;
-        await db.collection("data").doc("users").get().then(doc => {
-            if (doc.data().uid1 == uid) result = 1;
-            else if (doc.data().uid2 == uid) result = 2;
-            else if (doc.data().uid3 == uid) result = 3;
-            else if (doc.data().uid1 == null) result = 1;
-            else if (doc.data().uid2 == null) result = 2;
-            else if (doc.data().uid3 == null) result = 3;
-        });
-        return result;
+    async createID(uid) {
+        try {
+            const doc = await this.db.collection("data").doc("users").get();
+            const data = doc.data();
+
+            // 既存のuidがある場合のチェック
+            for (let i = 1; i <= MAX_PLAYER_NUM; i++) {
+                if (data[`uid${i}`] === uid) {
+                    return i;
+                }
+            }
+
+            // 空いているスロットを探してIDを返す
+            for (let i = 1; i <= MAX_PLAYER_NUM; i++) {
+                if (data[`uid${i}`] == null) {
+                    return i;
+                }
+            }
+
+        } catch (error) {
+            console.error("Error creating ID:", error);
+            return 0;
+        }
     }
 
     /**
      * 個別情報を保持するドキュメントを作成するメソッド
-     * @param {*} uid 
+     * @param {string} uid 作成するユーザーのUID
      */
     async createUserDoc(uid) {
-        await db.collection("users").doc(uid).set({ uid: uid, name: "未設定" });
+        try {
+            await this.db.collection("users").doc(uid).set({ uid: uid, name: "未設定" });
+        } catch (error) {
+            console.error("Error creating user document:", error);
+        }
     }
 
     /**
-     * 個別情報を保持するドキュメントが存在するか確認するメソッド
-     * @returns 
+     * ユーザーデータが存在するか確認するメソッド
+     * @param {string} uid 確認するUID
+     * @returns {Promise<boolean>} ユーザーデータが存在するかどうか
      */
     async existUserData(uid) {
-        var result = false;
-        await db.collection("users").doc(uid).get().then(doc => {
-            if (doc.exists) result = true;
-        });
-        return result;
+        try {
+            const doc = await this.db.collection("users").doc(uid).get();
+            return doc.exists;
+        } catch (error) {
+            console.error("Error checking if user data exists:", error);
+            return false;
+        }
     }
 
     /**
      * 引数のuidがゲームに参加しているか確認するメソッド
-     * @param {*} uid 
-     * @returns 
+     * @param {string} uid 確認するUID
+     * @returns {Promise<boolean>} 参加しているかどうか
      */
     async existPlayer(uid) {
-        var result = true;
-        await db.collection("data").doc("users").get().then(doc => {
-            if (uid != doc.data().uid1 && uid != doc.data().uid2 && uid != doc.data().uid3) {
-                result = false;
+        try {
+            const doc = await this.db.collection("data").doc("users").get();
+            const data = doc.data();
+
+            for (let i = 1; i <= MAX_PLAYER_NUM; i++) {
+                if (data[`uid${i}`] === uid) {
+                    return true;
+                }
             }
-        });
-        return result;
+
+            return false;
+        } catch (error) {
+            console.error("Error checking if player exists:", error);
+            return false;
+        }
     }
 
     /**
-     * 参加プレイヤーの情報から引数のプレイヤーuidを削除する
-     * @param {*} id 
+     * 参加プレイヤー情報から引数のIDのプレイヤーを削除するメソッド
+     * @param {number} id 削除するプレイヤーのID (1, 2, 3)
      */
     async deleteUser(id) {
-        if (id == 1) await db.collection("data").doc("users").update({ uid1: null, status1: 0 });
-        else if (id == 2) await db.collection("data").doc("users").update({ uid2: null, status2: 0 });
-        else if (id == 3) await db.collection("data").doc("users").update({ uid3: null, status3: 0 });
+        try {
+            const updateData = { [`uid${id}`]: null, [`status${id}`]: 0 };
+            await this.db.collection("data").doc("users").update(updateData);
+        } catch (error) {
+            console.error("Error deleting user:", error);
+        }
     }
 
 }
