@@ -1,7 +1,7 @@
 /**
  * 六角形を描画するクラス．
  */
-class Hexagonrawer extends Drawer {
+class HexagonDrawer extends Drawer {
     constructor(context, size) {
         super();
         this.context = context;
