@@ -3,3 +3,4 @@ public/main_page/send_mail.js
 .DS_Store
 public/.DS_Store
 public/single_play/.DS_Store
+.firebase/*

@@ -15,11 +15,13 @@ class Field {
 
     constructor(canvas, dataBaseManager) {
         this.context = canvas.getContext("2d");
-        this.size = canvas.width / 2;// 盤面の大きさ(6角形の1辺の長さ)
-        this.triangleSize = this.size / 4;// マスの大きさ(一辺の長さ)
-        this.cellSize = this.triangleSize * Math.sin(Math.PI / 3) * (2 / 3);// 外心から各頂点までの距離
+        this.size = canvas.width / 2;                                                               // 盤面の大きさ(6角形の1辺の長さ)
+        this.triangleSize = this.size / 4;                                                          // マスの大きさ(一辺の長さ)
+        this.cellSize = this.triangleSize * Math.sin(Math.PI / 3) * (2 / 3);                        // 外心から各頂点までの距離
         this.fieldList = Array.from(new Array(Field.COLUMN), () => new Array(Field.ROW).fill(0));
-        this.nextList = Array.from(new Array());// 次に置けるマスのリスト
+        this.nextList = Array.from(new Array());                                                    // 次に置けるマスのリスト
+        
+        // インスタンスの生成
         this.rectDrawer = new RectDrawer(this.context);
         this.circleDrawer = new CircleDrawer(this.context);
         this.triangleDrawer = new TriangleDrawer(this.context, this.cellSize);
@@ -183,17 +185,25 @@ class Field {
         for (let i = 0; i < Field.ROW; i++) {
             for (let j = 0; j < Field.COLUMN; j++) {
                 const x = j * this.triangleSize / 2;
-                let y = i * this.cellSize * 3 / 2 + 1;
+                const y = i * this.cellSize * 3 / 2 + 1;
+                // 三角形の向きを決定
                 const direction = (i + j) % 2 === 0 ? UPWARD : DOWNWARD;
 
-                if (direction === UPWARD) y += this.cellSize;
-                else if (direction === DOWNWARD) y += this.cellSize / 2;
+                //向きに合わせて中心座標を求める
+                if (direction === UPWARD) {
+                    y += this.cellSize;
+                }else if (direction === DOWNWARD) {
+                    y += this.cellSize / 2;
+                }
 
+                // 盤面外の場合は描画しない
                 if (!this.isOnField(j, i)) continue;
 
+                // マスの色を取得し，描画
                 const bgColor = this.getCellColor(currentStone, j, i, selectedX, selectedY);
                 this.triangleDrawer.draw(bgColor, x, y, direction);
 
+                // 石を描画
                 const stone = this.getStone(j, i);
                 if (stone > 0) {
                     this.circleDrawer.draw(Field.COLORS[stone], x, y, 0.9 * this.cellSize / 2);

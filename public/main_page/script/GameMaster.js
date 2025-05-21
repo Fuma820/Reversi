@@ -53,12 +53,13 @@ class GameMaster {
      * ゲームの進行メソッド．
      */
     async progress() {
+        // ゲーム中でなければ何もしない
         if (this.gameStatus != 1) return;
-
+        // 置けるマスがない場合，スキップ
         while (this.field.nextList.length == 0 && this.skipNum < MAX_PLAYER_NUM) {
             this.skipTurn();
         }
-
+        // プレイヤーの場合，または，全員がスキップした場合は何もしない
         if (this.playerList[this.currentStone - 1].type == "human" || this.skipNum >= MAX_PLAYER_NUM) {
             return;
         }
@@ -114,13 +115,16 @@ class GameMaster {
      */
     displayResult(id) {
         let message = "試合終了, ";
+        // ポイントを計算
         const pointList = this.field.createPointList();
-        if (this.playerList.length === 0) return;
+        // if (this.playerList.length === 0) return;
 
+        //ランキングを計算
         const player = this.playerList[id - 1];
         player.point = pointList[id - 1];
         const ranking = this.calculateRanking(id, pointList);
 
+        // UIの更新
         message += `得点: ${player.point}, 順位: ${ranking}`;
         this.uiManager.setText("logout_btn", "終了");
         this.uiManager.setText("message", message);
@@ -166,8 +170,9 @@ class GameMaster {
      * @returns {boolean} マスを選択できるかどうか
      */
     canSelect(clientX, clientY, id) {
+        // 自分のターンでない場合は選択できない
         if (this.currentStone !== id) return false;
-
+        // クリックされた位置を取得し，その位置に石を置けるか判定
         const [x, y] = this.field.getPosition(clientX, clientY);
         return this.field.canPut(id, x, y);
     }
@@ -178,10 +183,12 @@ class GameMaster {
     * @param {number} clientY クリックされた位置のY座標
     */
     putStone(clientX, clientY) {
+        // クリックされた位置を取得
         const [x, y] = this.field.getPosition(clientX, clientY);
+        // フィールド変数に格納
         this.selectedX = x;
         this.selectedY = y;
-
+        // 石を置き，他のプレイヤーの石をひっくり返す
         this.field.setStone(this.selectedX, this.selectedY, this.currentStone);
         this.reverseStonesInAllDirections();
     }
@@ -190,11 +197,10 @@ class GameMaster {
      * ランダムで石を置くメソッド．
      */
     autoPut() {
-        const nextList = this.field.nextList;
-        const randomIndex = Math.floor(Math.random() * nextList.length);
-
-        [this.selectedX, this.selectedY] = nextList[randomIndex];
-
+        const nextList = this.field.nextList;                               // 置けるマスのリスト
+        const randomIndex = Math.floor(Math.random() * nextList.length);    // ランダムなインデックスを生成
+        [this.selectedX, this.selectedY] = nextList[randomIndex];           // 次に置くマスの座標
+        // 石を置き，他のプレイヤーの石をひっくり返す
         this.field.setStone(this.selectedX, this.selectedY, this.currentStone);
         this.reverseStonesInAllDirections();
     }
@@ -204,12 +210,14 @@ class GameMaster {
      */
     reverseStonesInAllDirections() {
         for (let i = 0; i < DIRECTION_NUM; i++) {
+            // ひっくり返せるか判定し，ひっくり返す
             if (this.field.getReversibleNum(this.currentStone, this.selectedX, this.selectedY, i, 0) > 0) {
                 this.field.reverse(this.currentStone, this.selectedX, this.selectedY, i);
             }
         }
-
+        // スキップした回数をリセットし
         this.skipNum = 0;
+        // 次のターンに移る
         this.changeTurn();
     }
 
@@ -233,12 +241,12 @@ class GameMaster {
      */
     async start() {
         this.init();
-
+        // 状態を変更
         this.gameStatus = GAME_PLAYING;
         await this.dbManager.update("gameStatus", this.gameStatus);
-
+        // ゲーム進行
         await this.progress();
-
+        // UIの更新
         this.uiManager.setText("message", "ゲームスタート");
         this.uiManager.setText("ready_btn", "");
     }
