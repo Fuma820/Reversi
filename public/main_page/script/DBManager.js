@@ -154,8 +154,10 @@ class DBManager {
     async update(property, value) {
         try {
             if (property.startsWith("uid") || property.startsWith("status")) {
+                // uid1, uid2, status1, status2 の場合
                 await this.db.collection("data").doc("users").update({ [property]: value });
             } else if (property === "gameStatus") {
+                // gameStatus の場合
                 await this.db.collection("data").doc("field").update({ gameStatus: value });
             }
         } catch (error) {
@@ -169,6 +171,7 @@ class DBManager {
      */
     async syncWith(gameMaster) {
         try {
+            // Firestoreから盤面のデータを取得
             const doc = await this.db.collection("data").doc("field").get();
             const data = doc.data();
 
@@ -282,9 +285,9 @@ class DBManager {
     }
 
     /**
-     * ユーザーデータが存在するか確認するメソッド
+     * ユーザデータが存在するか確認するメソッド
      * @param {string} uid 確認するUID
-     * @returns {Promise<boolean>} ユーザーデータが存在するかどうか
+     * @returns {Promise<boolean>} ユーザデータが存在するかどうか
      */
     async existUserData(uid) {
         try {
@@ -297,9 +300,9 @@ class DBManager {
     }
 
     /**
-     * ユーザーデータの存在を確認するメソッド．
+     * 現在のゲーム上にユーザが存在を確認するメソッド．
      * @param {string} uid 確認するUID
-     * @returns {Promise<boolean>} ユーザーデータが存在するか
+     * @returns {Promise<boolean>} ユーザが存在するか
      */
     async existPlayer(uid) {
         try {
