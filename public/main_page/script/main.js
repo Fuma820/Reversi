@@ -42,10 +42,10 @@ window.addEventListener("resize", () => {
 });
 
 // フィールド情報更新時実行
-db.collection("data").doc("field").onSnapshot(()=>fieldUpdate());
+db.collection("data").doc("field").onSnapshot(() => fieldUpdate());
 
 // ユーザー名変更時実行
-db.collection("users").onSnapshot(()=>updatePlayerNames());
+db.collection("users").onSnapshot(() => updatePlayerNames());
 
 // ログイン状態変更時実行
 firebase.auth().onAuthStateChanged(async user => {
@@ -56,24 +56,38 @@ firebase.auth().onAuthStateChanged(async user => {
         }
 
         uid = user.uid;
+        // ユーザーのログイン状態を確認
         const [userExists, playerExists] = await Promise.all([
             dbManager.existUserData(uid),
             dbManager.existPlayer(uid)
         ]);
 
+        // ユーザーが存在しない場合は新規作成
         if (!userExists) await dbManager.createUserDoc(uid);
         id = await dbManager.createID(uid);
 
-        if (!playerExists) await timeOutAction();
+        // タイムアウトしてる場合に処理を実行
+        await timeOutAction();
 
+        // TODO: timeOutAction()メソッドないに実装する？
+        // ログイン時にタイムスタンプを残す
+        await dbManager.saveTimeStamp(uid);
+
+        // 準備完了でない場合は，ready_btnに文字を表示
         const status = await dbManager.getStatus(id);
         if (status !== GAME_READY) uiManager.disableBtn("ready_btn");
 
+        // ユーザの色を取得
         const color = stoneColors[id] || "";
         uiManager.setText("player_color", color);
+
+        // ゲームに参加しているユーザを更新
         await dbManager.update(`uid${id}`, uid);
 
+        // ゲームの状態を取得
         const gameStatus = gameMaster.gameStatus;
+
+        // ゲームの状態に応じてUIを更新
         if (gameStatus !== GAME_READY) uiManager.setText("ready_btn", "");
         if (gameStatus === GAME_FINISHED) gameMaster.displayResult(id);
 
@@ -122,13 +136,15 @@ async function onClick(e) {
     await dbManager.checkLogin(uid);
     if (gameMaster.gameStatus == GAME_READY) return;
 
+    // クリックされた位置を取得
     const rect = e.target.getBoundingClientRect();
     const x = Math.floor((e.clientX - rect.left) * resolution);
     const y = Math.floor((e.clientY - rect.top) * resolution);
-
-    if (!gameMaster.canSelect(x, y, id)) return;
-    gameMaster.action(x, y);
-    dbManager.saveTimeStamp(uid);
+    // クリックされたマスを選択可能な場合
+    if (gameMaster.canSelect(x, y, id)) {
+        gameMaster.action(x, y);
+        await dbManager.saveTimeStamp(uid);
+    }
 }
 
 /**
@@ -208,7 +224,7 @@ async function ready() {
 }
 
 /**
- * プレイヤーのUIDを取得してUIを更新する関数．
+ * プレイヤーのUIDを取得してメニューのUIを更新する関数．
  */
 async function updatePlayerNames() {
     try {
