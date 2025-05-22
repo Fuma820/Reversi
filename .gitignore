@@ -1,5 +1,5 @@
 public/main_page/app.js
 public/main_page/send_mail.js
-*.DS_Store
+# *.DS_Store
 .firebase/*
-.vscode/*
+# .vscode/*
