@@ -215,7 +215,7 @@ class GameMaster {
                 this.field.reverse(this.currentStone, this.selectedX, this.selectedY, i);
             }
         }
-        // スキップした回数をリセットし
+        // スキップした回数をリセットする
         this.skipNum = 0;
         // 次のターンに移る
         this.changeTurn();
