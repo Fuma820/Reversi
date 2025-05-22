@@ -184,8 +184,8 @@ class Field {
 
         for (let i = 0; i < Field.ROW; i++) {
             for (let j = 0; j < Field.COLUMN; j++) {
-                const x = j * this.triangleSize / 2;
-                const y = i * this.cellSize * 3 / 2 + 1;
+                let x = j * this.triangleSize / 2;
+                let y = i * this.cellSize * 3 / 2 + 1;
                 // 三角形の向きを決定
                 const direction = (i + j) % 2 === 0 ? UPWARD : DOWNWARD;
 
