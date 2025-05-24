@@ -3,3 +3,4 @@ public/main_page/send_mail.js
 *.DS_Store
 .firebase/*
 .vscode/*
+public/main_page/script/Config.js

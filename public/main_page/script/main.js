@@ -1,13 +1,5 @@
-const firebaseConfig = {
-    apiKey: "AIzaSyAdCIMrxlj-C0h1fAC8jZ3dtkpBlIZpTvc",
-    authDomain: "test-b1eea.firebaseapp.com",
-    databaseURL: "https://test-b1eea-default-rtdb.firebaseio.com",
-    projectId: "test-b1eea",
-    storageBucket: "test-b1eea.appspot.com",
-    messagingSenderId: "32628222705",
-    appId: "1:32628222705:web:6784cadb557a1f8d301750",
-    measurementId: "G-DFPZ7PDY47"
-};
+// Firebaseの設定を取得
+const firebaseConfig = Config.getFirebaseConfig();
 
 // ゲームの状態を表現する定数
 const GAME_READY = 0;
